@@ -107,6 +107,16 @@ PoPManager includes an embedded HTTP server that receives push-based telemetry f
 - Historical farm data with auto-pruning (7-day retention)
 - Troubleshooting logs with configurable log levels
 
+### Cloud Sync *(PoPCloud — $5/month)*
+- **Remote monitoring** — view your farm from anywhere via the web portal or companion app
+- **Push notifications** — get alerts on your phone when miners go offline, overheat, or stop submitting shares
+- **Remote commands** — start, stop, restart miners and push pool configurations from your phone or browser
+- **Unlimited history** — cloud stores farm data indefinitely (local is limited to 30 days)
+- **Multi-instance** — connect multiple PoPManager desktops to one cloud account
+- **Offline-resilient** — data queues locally when connectivity is lost, syncs automatically on reconnect
+
+See [docs/CLOUD_SYNC.md](docs/CLOUD_SYNC.md) for setup guide and [docs/CLOUD_TROUBLESHOOTING.md](docs/CLOUD_TROUBLESHOOTING.md) for troubleshooting.
+
 ### Desktop Integration
 - System tray mode — minimize to tray for background monitoring
 - Auto-update support via GitHub Releases (cross-platform: Windows, macOS, Linux)
