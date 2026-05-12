@@ -1,9 +1,12 @@
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::sync::{Arc, Mutex};
 
 pub mod auth;
 pub mod client;
+pub mod command_exec;
 pub mod queue;
+pub mod sync;
+pub mod ws;
 
 /// Current sync connection status (sent to frontend)
 #[derive(Debug, Clone, Serialize)]
@@ -26,6 +29,7 @@ pub struct CloudState {
     pub api_key: Mutex<Option<String>>,
     pub last_sync: Mutex<Option<i64>>,  // unix timestamp ms
     pub queue_size: Mutex<u64>,         // number of pending items
+    pub latest_snapshot: Mutex<Option<serde_json::Value>>,
 }
 
 impl CloudState {
@@ -38,6 +42,7 @@ impl CloudState {
             api_key: Mutex::new(None),
             last_sync: Mutex::new(None),
             queue_size: Mutex::new(0),
+            latest_snapshot: Mutex::new(None),
         }
     }
 }

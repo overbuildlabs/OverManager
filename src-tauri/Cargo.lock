@@ -3370,6 +3370,7 @@ dependencies = [
  "axum",
  "chrono",
  "dirs 5.0.1",
+ "futures-util",
  "ipnetwork",
  "keyring",
  "lettre",

@@ -122,6 +122,24 @@ pub fn run() {
                 log::info!("Cloud: restored session from keychain");
             }
 
+            // Start cloud sync loop and WebSocket client
+            {
+                let cloud_state_sync = std::sync::Arc::clone(&cloud_state);
+                let app_handle_sync = app.handle().clone();
+                tauri::async_runtime::spawn(cloud::sync::start_sync_loop(
+                    cloud_state_sync,
+                    app_handle_sync,
+                ));
+            }
+            {
+                let cloud_state_ws = std::sync::Arc::clone(&cloud_state);
+                let app_handle_ws = app.handle().clone();
+                tauri::async_runtime::spawn(cloud::ws::start_ws_client(
+                    cloud_state_ws,
+                    app_handle_ws,
+                ));
+            }
+
             let app_handle_for_popminer = app.handle().clone();
             let popminer_state_clone = std::sync::Arc::clone(&popminer_state);
             tauri::async_runtime::spawn(async move {

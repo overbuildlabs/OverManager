@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::Arc;
 use tauri::Manager;
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -64,6 +65,9 @@ fn now_secs() -> i64 {
 
 #[tauri::command]
 pub async fn add_farm_snapshot(app: tauri::AppHandle, snapshot: FarmSnapshot) -> Result<(), String> {
+    // Serialize for cloud before moving into history vec
+    let cloud_payload = serde_json::to_value(&snapshot).ok();
+
     let mut snapshots = load_history(&app)?;
     snapshots.push(snapshot);
     let before = snapshots.len();
@@ -74,7 +78,21 @@ pub async fn add_farm_snapshot(app: tauri::AppHandle, snapshot: FarmSnapshot) ->
         log::info!("Farm history: pruned {} snapshot(s) older than 30 days", pruned);
     }
     log::info!("Farm snapshot saved ({} total snapshots)", snapshots.len());
-    save_history(&app, &snapshots)
+    save_history(&app, &snapshots)?;
+
+    // Push to cloud sync if logged in
+    if let Some(cloud_state) = app.try_state::<Arc<crate::cloud::CloudState>>() {
+        if cloud_state.api_key.lock().unwrap().is_some() {
+            if let Some(payload) = cloud_payload {
+                *cloud_state.latest_snapshot.lock().unwrap() = Some(payload.clone());
+                if let Err(e) = crate::cloud::queue::enqueue("snapshot", &payload) {
+                    log::warn!("Cloud: failed to enqueue snapshot: {}", e);
+                }
+            }
+        }
+    }
+
+    Ok(())
 }
 
 #[tauri::command]

@@ -3,8 +3,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
+use tauri::Manager;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum RuleType {
@@ -333,7 +334,7 @@ pub fn acknowledge_alert(id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn check_alerts(miners: Vec<MinerSnapshot>) -> Result<Vec<AlertEvent>, String> {
+pub fn check_alerts(app: tauri::AppHandle, miners: Vec<MinerSnapshot>) -> Result<Vec<AlertEvent>, String> {
     let rules = load_rules();
     let now = Utc::now();
     let now_ts = now.timestamp();
@@ -499,13 +500,24 @@ pub fn check_alerts(miners: Vec<MinerSnapshot>) -> Result<Vec<AlertEvent>, Strin
             history = history[start..].to_vec();
         }
         save_history(&history)?;
+
+        // Enqueue alerts for cloud sync
+        if let Some(cloud_state) = app.try_state::<Arc<crate::cloud::CloudState>>() {
+            if cloud_state.api_key.lock().unwrap().is_some() {
+                for event in &triggered {
+                    if let Ok(payload) = serde_json::to_value(event) {
+                        let _ = crate::cloud::queue::enqueue("alert", &payload);
+                    }
+                }
+            }
+        }
     }
 
     Ok(triggered)
 }
 
 #[tauri::command]
-pub fn check_mobile_alerts(miners: Vec<MobileMinerSnapshot>) -> Result<Vec<AlertEvent>, String> {
+pub fn check_mobile_alerts(app: tauri::AppHandle, miners: Vec<MobileMinerSnapshot>) -> Result<Vec<AlertEvent>, String> {
     let rules = load_rules();
     let now = Utc::now();
     let now_ts = now.timestamp();
@@ -651,6 +663,17 @@ pub fn check_mobile_alerts(miners: Vec<MobileMinerSnapshot>) -> Result<Vec<Alert
             history = history[start..].to_vec();
         }
         save_history(&history)?;
+
+        // Enqueue alerts for cloud sync
+        if let Some(cloud_state) = app.try_state::<Arc<crate::cloud::CloudState>>() {
+            if cloud_state.api_key.lock().unwrap().is_some() {
+                for event in &triggered {
+                    if let Ok(payload) = serde_json::to_value(event) {
+                        let _ = crate::cloud::queue::enqueue("alert", &payload);
+                    }
+                }
+            }
+        }
     }
 
     Ok(triggered)

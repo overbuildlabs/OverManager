@@ -9,6 +9,7 @@ import { appLogDir } from "@tauri-apps/api/path";
 import type { SmtpConfig } from "../types/alerts";
 import popLogo from "../assets/PopLogo.png";
 import { useProfitability } from "../context/ProfitabilityContext";
+import CloudSyncPanel from "../components/CloudSyncPanel";
 
 const EMPTY_SMTP: SmtpConfig = {
   smtpHost: "",
@@ -351,6 +352,9 @@ export default function Settings() {
             </button>
           </div>
         </div>
+
+        {/* Cloud Sync */}
+        <CloudSyncPanel />
 
         {/* Email Configuration */}
         {smtpLoaded && (
