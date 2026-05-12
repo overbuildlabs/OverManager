@@ -1,3 +1,4 @@
+mod cloud;
 mod commands;
 mod http_server;
 mod mdns;
@@ -42,6 +43,7 @@ use commands::mobile_miner::{
     queue_mobile_command, get_mobile_commands, clear_mobile_command_history,
     cancel_mobile_command,
 };
+use cloud::{cloud_login, cloud_logout, cloud_status, cloud_update_instance_name};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -97,6 +99,28 @@ pub fn run() {
                 discovered: std::sync::Mutex::new(HashMap::new()),
             });
             app.manage(std::sync::Arc::clone(&popminer_state));
+
+            // Cloud sync state
+            let cloud_state = std::sync::Arc::new(cloud::CloudState::new());
+            app.manage(std::sync::Arc::clone(&cloud_state));
+
+            // Restore cloud state from keychain if previously logged in
+            if cloud::auth::is_logged_in() {
+                if let Ok(email) = cloud::auth::load_email() {
+                    *cloud_state.email.lock().unwrap() = Some(email);
+                }
+                if let Ok(name) = cloud::auth::load_instance_name() {
+                    *cloud_state.instance_name.lock().unwrap() = Some(name);
+                }
+                if let Ok(id) = cloud::auth::load_instance_id() {
+                    *cloud_state.instance_id.lock().unwrap() = Some(id);
+                }
+                if let Ok(key) = cloud::auth::load_api_key() {
+                    *cloud_state.api_key.lock().unwrap() = Some(key);
+                    *cloud_state.status.lock().unwrap() = cloud::CloudSyncStatus::Connected;
+                }
+                log::info!("Cloud: restored session from keychain");
+            }
 
             let app_handle_for_popminer = app.handle().clone();
             let popminer_state_clone = std::sync::Arc::clone(&popminer_state);
@@ -281,6 +305,10 @@ pub fn run() {
             get_discovered_popminer_devices,
             add_popminer_device,
             remove_popminer_device,
+            cloud_login,
+            cloud_logout,
+            cloud_status,
+            cloud_update_instance_name,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
