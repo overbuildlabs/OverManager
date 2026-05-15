@@ -65,8 +65,17 @@ fn now_secs() -> i64 {
 
 #[tauri::command]
 pub async fn add_farm_snapshot(app: tauri::AppHandle, snapshot: FarmSnapshot) -> Result<(), String> {
-    // Serialize for cloud before moving into history vec
-    let cloud_payload = serde_json::to_value(&snapshot).ok();
+    // Serialize for cloud before moving into history vec.
+    // Convert timestamp from Unix seconds to ISO 8601 string for the cloud API
+    // (JavaScript's Date constructor treats bare integers as milliseconds, not seconds).
+    let cloud_payload = serde_json::to_value(&snapshot).ok().map(|mut v| {
+        if let Some(ts) = v.get("timestamp").and_then(|t| t.as_i64()) {
+            if let Some(dt) = chrono::DateTime::from_timestamp(ts, 0) {
+                v["timestamp"] = serde_json::Value::String(dt.to_rfc3339());
+            }
+        }
+        v
+    });
 
     let mut snapshots = load_history(&app)?;
     snapshots.push(snapshot);

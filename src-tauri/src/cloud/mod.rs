@@ -101,9 +101,15 @@ pub async fn cloud_login(
         .unwrap_or_default();
     if let Ok(history_json) = std::fs::read_to_string(&history_path) {
         if let Ok(snapshots) = serde_json::from_str::<Vec<serde_json::Value>>(&history_json) {
-            if let Some(latest) = snapshots.last() {
+            if let Some(mut latest) = snapshots.last().cloned() {
+                // Convert timestamp from Unix seconds to ISO 8601 for the cloud API
+                if let Some(ts) = latest.get("timestamp").and_then(|t| t.as_i64()) {
+                    if let Some(dt) = chrono::DateTime::from_timestamp(ts, 0) {
+                        latest["timestamp"] = serde_json::Value::String(dt.to_rfc3339());
+                    }
+                }
                 *state.latest_snapshot.lock().unwrap() = Some(latest.clone());
-                if let Err(e) = queue::enqueue("snapshot", latest) {
+                if let Err(e) = queue::enqueue("snapshot", &latest) {
                     log::warn!("Cloud: failed to enqueue initial snapshot: {}", e);
                 } else {
                     log::info!("Cloud: initial snapshot enqueued for immediate sync");
