@@ -7,7 +7,7 @@ import { check } from "@tauri-apps/plugin-updater";
 import { getVersion } from "@tauri-apps/api/app";
 import { appLogDir } from "@tauri-apps/api/path";
 import type { SmtpConfig } from "../types/alerts";
-import popLogo from "../assets/PopLogo.png";
+import obLogo from "../assets/icon.png";
 import { useProfitability } from "../context/ProfitabilityContext";
 import CloudSyncPanel from "../components/CloudSyncPanel";
 
@@ -722,7 +722,7 @@ export default function Settings() {
 
           <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-700/50">
             <img
-              src={popLogo}
+              src={obLogo}
               alt="OBManager Logo"
               className="w-14 h-14 rounded-xl object-contain flex-shrink-0"
             />
