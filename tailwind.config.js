@@ -30,12 +30,13 @@ export default {
           600: '#7c3aed',
           700: '#6d28d9',
         },
-        // Brand dark surfaces (website: page #0C0C0F, section #16161B,
-        // card/forest #162720).
+        // Brand dark surfaces — neutral grey on near-black, matching the
+        // website. Green lives only in the emerald primary (logo, buttons,
+        // active nav), NOT the surfaces.
         dark: {
-          700: '#1b2e25',  // subtle hover lift on cards (lighter forest)
-          800: '#162720',  // card / panel background (dark forest green)
-          850: '#16161B',  // section / intermediate surface (dark grey)
+          700: '#202028',  // hover lift (lighter grey)
+          800: '#16161B',  // card / panel background (dark grey)
+          850: '#121216',  // subtle section surface (between card and page)
           900: '#0C0C0F',  // page background (near-black)
           950: '#060608',  // deepest surface
         },
