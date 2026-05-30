@@ -1,14 +1,14 @@
-# PoPManager
+# OverManager
 
 **Open-source, cross-platform miner management software for ASIC and mobile miners**
 
-Built by [Proof of Prints](https://proofofprints.com) | [Support: support@overbuildlabs.com](mailto:support@overbuildlabs.com)
+Built by [OverBuild Labs](https://proofofprints.com) | [Support: support@overbuildlabs.com](mailto:support@overbuildlabs.com)
 
 ## Overview
 
-PoPManager is a free, open-source desktop application for monitoring and managing your cryptocurrency mining operation. Built with Tauri (Rust + React), it runs on Windows, Linux, and macOS without requiring a dedicated mining OS.
+OverManager is a free, open-source desktop application for monitoring and managing your cryptocurrency mining operation. Built with Tauri (Rust + React), it runs on Windows, Linux, and macOS without requiring a dedicated mining OS.
 
-Manage ASIC miners on your local network *and* mobile miners running **PoPMobile** *(coming soon)* on Android — all from one unified dashboard. Monitor hashrates, temperatures, battery levels, profitability, and manage pool configurations across your entire fleet.
+Manage ASIC miners on your local network *and* mobile miners running **OverMobile** *(coming soon)* on Android — all from one unified dashboard. Monitor hashrates, temperatures, battery levels, profitability, and manage pool configurations across your entire fleet.
 
 ## Screenshots
 
@@ -32,23 +32,23 @@ Manage ASIC miners on your local network *and* mobile miners running **PoPMobile
 ![Miners Card View](docs/screenshots/Miner%20Page%20Card.png)
 ![Miner Detail](docs/screenshots/Miner%20Detail.png)
 
-### Mobile Miner Management
+### OverMobile Management
 
-PoPManager includes an embedded HTTP server that receives push-based telemetry from mobile miners running **PoPMobile** *(coming soon)* on Android. Mobile miners pair with a single-use 6-digit pairing code and then report telemetry every 30 seconds over your local network.
+OverManager includes an embedded HTTP server that receives push-based telemetry from mobile miners running **OverMobile** *(coming soon)* on Android. Mobile miners pair with a single-use 6-digit pairing code and then report telemetry every 30 seconds over your local network.
 
-- **Dedicated Mobile Miners screen** with the same card/grid views, search, filters, and sorting as the ASIC page
+- **Dedicated OverMobile screen** with the same card/grid views, search, filters, and sorting as the ASIC page
 - **Real-time telemetry:** hashrate (auto-scaled H/s through GH/s), CPU temperature, thermal throttle state, battery level with charging indicator, accepted/rejected shares, active pool
-- **Remote control panel** — Start, Stop, Restart mining remotely from PoPManager
+- **Remote control panel** — Start, Stop, Restart mining remotely from OverManager
 - **Remote configuration** — push pool URL, wallet, worker, and thread count to any mobile device via queued commands
 - **Command queue with acknowledgement** — commands are delivered on the device's next report cycle; offline devices receive them when they reconnect
 - **Device pairing** — single-use 6-digit pairing code displayed in the app; code rotates automatically after each successful pairing for security
-- **Push to Mobile Miners** — apply any saved pool profile to selected mobile devices directly from the Pools page
+- **Push to OverMobile** — apply any saved pool profile to selected mobile devices directly from the Pools page
 - **Mobile-specific alerts** — battery low, CPU temperature high, thermal throttle, device offline
 - **Device removal** — queue cleanup commands (stop mining + clear config) before removing a device, with a confirmation prompt explaining the process
 
-![Mobile Miners Card View](docs/screenshots/Mobile%20Miner%20Card.png)
-![Mobile Miners Grid View](docs/screenshots/Mobile%20Miner%20Grid.png)
-![Mobile Miner Remote Control](docs/screenshots/Mobile%20Detail.png)
+![OverMobile Card View](docs/screenshots/Mobile%20Miner%20Card.png)
+![OverMobile Grid View](docs/screenshots/Mobile%20Miner%20Grid.png)
+![OverMobile Remote Control](docs/screenshots/Mobile%20Detail.png)
 
 ### Multi-Coin Support
 - Built-in support for **Kaspa (KAS)** and **Bitcoin (BTC)**
@@ -85,10 +85,10 @@ PoPManager includes an embedded HTTP server that receives push-based telemetry f
 - Device offline (consecutive missed reports)
 
 **Notification channels:**
-- Desktop notifications (branded PoPManager alerts on Windows)
+- Desktop notifications (branded OverManager alerts on Windows)
 - Email alerts via SMTP (SendGrid, Gmail, or any SMTP provider)
 - Alert history with acknowledge/dismiss workflow
-- 5-minute startup grace period prevents false alerts after PoPManager restarts
+- 5-minute startup grace period prevents false alerts after OverManager restarts
 
 ![Alert Desktop Notification](docs/screenshots/Alert%20Desktop%20Notification.png)
 ![Alert Page](docs/screenshots/Alert%20Screen.png)
@@ -96,7 +96,7 @@ PoPManager includes an embedded HTTP server that receives push-based telemetry f
 ### Pool Management
 - Saved pool profiles with per-pool fee percentages and coin association
 - **Unified miner view** — see both ASIC and mobile miners connected to each pool, with slot indicators (Primary / Backup 1 / Backup 2)
-- **Push to Mobile Miners** — select mobile devices and queue a pool configuration change directly from the pool detail page
+- **Push to OverMobile** — select mobile devices and queue a pool configuration change directly from the pool detail page
 - Bulk apply pool configurations to ASIC miners
 
 ![Pool Detail View](docs/screenshots/Pool%20View.png)
@@ -112,7 +112,7 @@ PoPManager includes an embedded HTTP server that receives push-based telemetry f
 - **Push notifications** — get alerts on your phone when miners go offline, overheat, or stop submitting shares
 - **Remote commands** — start, stop, restart miners and push pool configurations from your phone or browser
 - **Unlimited history** — cloud stores farm data indefinitely (local is limited to 30 days)
-- **Multi-instance** — connect multiple PoPManager desktops to one cloud account
+- **Multi-instance** — connect multiple OverManager desktops to one cloud account
 - **Offline-resilient** — data queues locally when connectivity is lost, syncs automatically on reconnect
 
 See [docs/CLOUD_SYNC.md](docs/CLOUD_SYNC.md) for setup guide and [docs/CLOUD_TROUBLESHOOTING.md](docs/CLOUD_TROUBLESHOOTING.md) for troubleshooting.
@@ -124,13 +124,13 @@ See [docs/CLOUD_SYNC.md](docs/CLOUD_SYNC.md) for setup guide and [docs/CLOUD_TRO
 
 ![System Tray Icon](docs/screenshots/Systray%20icon.png)
 
-## PoPMobile *(coming soon)*
+## OverMobile *(coming soon)*
 
-**PoPMobile** is a companion Android app that turns your phone or tablet into a Kaspa miner and reports telemetry back to PoPManager over your local network.
+**OverMobile** is a companion Android app that turns your phone or tablet into a Kaspa miner and reports telemetry back to OverManager over your local network.
 
 - Mine Kaspa (KAS) using your device's CPU
 - Automatic server discovery via pairing code — no manual IP configuration
-- Receives remote commands from PoPManager: start, stop, restart, change pool/wallet/threads
+- Receives remote commands from OverManager: start, stop, restart, change pool/wallet/threads
 - Reports telemetry every 30 seconds: hashrate, CPU temp, battery, throttle state, pool stats
 - Works offline — queued commands are delivered on reconnect
 
@@ -171,31 +171,31 @@ npm run tauri build
 ## Quick Start
 
 ### ASIC Miners
-1. **Launch PoPManager** and open the **ASIC Miners** tab in the sidebar
+1. **Launch OverManager** and open the **ASIC Miners** tab in the sidebar
 2. Click **Add Device** to open the discovery panel
-3. Click **Scan Network** — PoPManager will auto-detect your local subnet and find supported miners
+3. Click **Scan Network** — OverManager will auto-detect your local subnet and find supported miners
 4. Select the miners you want to monitor and click **Add to Monitored**
 5. Go to **Pools** to create a pool profile with your pool address and wallet
 6. Select miners on the ASIC Miners page and click **Apply Pool Profile** to push the config
 7. Check the **Dashboard** for your farm overview and profitability estimates
 
-### Mobile Miners (PoPMobile)
-1. Enable the mobile miner server in **Settings → Mobile Miner Server**
-2. Open the **Mobile Miners** tab and click **Add Device** to reveal the server URL and pairing code
-3. In PoPMobile, enter the server URL (e.g. `http://192.168.1.50:8787`) and the 6-digit pairing code
-4. Once paired, the device will appear in the Mobile Miners list and begin reporting telemetry
+### OverMobile
+1. Enable the mobile miner server in **Settings → OverMobile Server**
+2. Open the **OverMobile** tab and click **Add Device** to reveal the server URL and pairing code
+3. In OverMobile, enter the server URL (e.g. `http://192.168.1.50:8787`) and the 6-digit pairing code
+4. Once paired, the device will appear in the OverMobile list and begin reporting telemetry
 5. Use the **Remote Control** panel on any mobile miner's detail page to start, stop, or reconfigure mining
-6. Use the **Push to Mobile Miners** action on any Pool profile to configure multiple mobile devices at once
+6. Use the **Push to OverMobile** action on any Pool profile to configure multiple mobile devices at once
 
 ## First Launch on Windows
 
-**SmartScreen warning:** Because PoPManager v1 is distributed without an Authenticode code-signing certificate, Windows SmartScreen will display an "unrecognized app" warning the first time you run the installer. This is expected. Click **More info** on the warning dialog, then **Run anyway** to proceed. Subsequent launches will not show the warning on the same machine. Code signing is planned for a future release.
+**SmartScreen warning:** Because OverManager v1 is distributed without an Authenticode code-signing certificate, Windows SmartScreen will display an "unrecognized app" warning the first time you run the installer. This is expected. Click **More info** on the warning dialog, then **Run anyway** to proceed. Subsequent launches will not show the warning on the same machine. Code signing is planned for a future release.
 
-**Firewall prompt:** PoPManager can run an embedded HTTP server on port 8787 for mobile miner telemetry. The server is **disabled by default** — enable it in **Settings → Mobile Miner Server** if you plan to use PoPMobile. When enabled, Windows Defender Firewall will prompt you to allow PoPManager to accept incoming connections on that port.
+**Firewall prompt:** OverManager can run an embedded HTTP server on port 8787 for mobile miner telemetry. The server is **disabled by default** — enable it in **Settings → OverMobile Server** if you plan to use OverMobile. When enabled, Windows Defender Firewall will prompt you to allow OverManager to accept incoming connections on that port.
 
 ## Adding New Coins
 
-PoPManager is designed to be modular. See [docs/ADD_NEW_COIN.md](docs/ADD_NEW_COIN.md) for instructions on adding support for new cryptocurrencies.
+OverManager is designed to be modular. See [docs/ADD_NEW_COIN.md](docs/ADD_NEW_COIN.md) for instructions on adding support for new cryptocurrencies.
 
 ## Supported Miners
 
@@ -220,7 +220,7 @@ All configuration is stored locally on your machine. On Windows, data is split a
 - `history.json` — farm hashrate snapshots
 - `uptime.json` — per-miner uptime tracking
 
-To fully back up your PoPManager setup, copy both directories. Logs live in `%APPDATA%\com.proofofprints.popmanager\logs\popmanager.log`.
+To fully back up your OverManager setup, copy both directories. Logs live in `%APPDATA%\com.proofofprints.popmanager\logs\popmanager.log`.
 
 On Linux and macOS the layout follows each platform's XDG/Application Support conventions automatically.
 
