@@ -17,6 +17,7 @@ import { profileToPayload } from "../types/miner";
 import { useProfitability } from "../context/ProfitabilityContext";
 import { getMinerCoinId } from "../utils/coinLookup";
 import { getCoinIcon } from "../utils/coinIcon";
+import MuteControl from "../components/MuteControl";
 
 const HEALTH_COLORS: Record<string, string> = {
   ok: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
@@ -327,6 +328,7 @@ export default function MinerDetail() {
           {lastRefresh && (
             <p className="text-xs text-slate-500">Updated: {lastRefresh}</p>
           )}
+          <MuteControl id={decodedIp} />
           <button
             onClick={fetchStatus}
             disabled={refreshing}

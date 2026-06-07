@@ -6,6 +6,7 @@ pub mod email;
 pub mod export;
 pub mod history;
 pub mod miner;
+pub mod mute;
 pub mod notifications;
 pub mod pool;
 pub mod pool_profiles;

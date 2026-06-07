@@ -370,6 +370,10 @@ pub fn check_alerts(app: tauri::AppHandle, miners: Vec<MinerSnapshot>) -> Result
         return Ok(vec![]);
     }
 
+    // Devices the user has explicitly muted — no alert, no notification, no
+    // cloud push while muted. Expired mutes are excluded automatically.
+    let muted = crate::commands::mute::muted_ids(now_ts * 1000);
+
     let mut triggered: Vec<AlertEvent> = Vec::new();
     let mut idx: u32 = 0;
 
@@ -383,6 +387,9 @@ pub fn check_alerts(app: tauri::AppHandle, miners: Vec<MinerSnapshot>) -> Result
         }
 
         for miner in &miners {
+            if muted.contains(&miner.ip) {
+                continue;
+            }
             if !rule.applies_to.is_empty() && !rule.applies_to.contains(&miner.ip) {
                 continue;
             }
@@ -537,6 +544,9 @@ pub fn check_mobile_alerts(app: tauri::AppHandle, miners: Vec<MobileMinerSnapsho
         return Ok(vec![]);
     }
 
+    // Devices the user has explicitly muted — skipped like in check_alerts.
+    let muted = crate::commands::mute::muted_ids(now_ts * 1000);
+
     let mut triggered: Vec<AlertEvent> = Vec::new();
     let mut idx: u32 = 0;
 
@@ -549,6 +559,9 @@ pub fn check_mobile_alerts(app: tauri::AppHandle, miners: Vec<MobileMinerSnapsho
         }
 
         for miner in &miners {
+            if muted.contains(&miner.device_id) {
+                continue;
+            }
             if !rule.applies_to.is_empty() && !rule.applies_to.contains(&miner.device_id) {
                 continue;
             }
