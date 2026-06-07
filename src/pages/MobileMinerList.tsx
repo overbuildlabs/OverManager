@@ -150,6 +150,7 @@ function MobileMinerCard({
   onRemove,
   history,
   coinIcon,
+  isMuted = false,
 }: {
   miner: MobileMiner;
   onClick: () => void;
@@ -159,6 +160,7 @@ function MobileMinerCard({
   onRemove: () => void;
   history: HistoryPoint[];
   coinIcon: string | null;
+  isMuted?: boolean;
 }) {
   const onlineState = deriveOnlineState(miner);
   const statusColor = {
@@ -182,6 +184,8 @@ function MobileMinerCard({
       className={`bg-dark-800 rounded-xl border p-5 cursor-pointer transition-all relative ${
         selectionMode && selected
           ? "border-primary-500 bg-primary-500/5"
+          : isMuted
+          ? "border-amber-500/40 bg-amber-500/5 hover:border-amber-500/60"
           : "border-slate-700/50 hover:border-primary-500/50 hover:bg-dark-800/80"
       }`}
       onClick={handleCardClick}
@@ -235,10 +239,14 @@ function MobileMinerCard({
         {!selectionMode && (
           <div className="flex items-center gap-2 flex-shrink-0">
             <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-white ${statusColor}`}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                isMuted
+                  ? "bg-amber-500/15 border border-amber-500/40 text-amber-300"
+                  : `text-white ${statusColor}`
+              }`}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-white/70" />
-              {statusLabel}
+              <span className={`w-1.5 h-1.5 rounded-full ${isMuted ? "bg-amber-400" : "bg-white/70"}`} />
+              {isMuted ? "Muted" : statusLabel}
             </span>
             <button
               onClick={(e) => {
@@ -333,6 +341,7 @@ function MobileMinerTable({
   onSort,
   coinIconByDevice,
   onRemove,
+  muted,
 }: {
   data: MobileMiner[];
   selectedDeviceIds: Set<string>;
@@ -343,6 +352,7 @@ function MobileMinerTable({
   onSort: (col: string) => void;
   coinIconByDevice: Record<string, string | null>;
   onRemove?: (miner: MobileMiner) => void;
+  muted: Record<string, { mutedUntil: number | null }>;
 }) {
   const statusBg = (miner: MobileMiner) => {
     const state = deriveOnlineState(miner);
@@ -478,8 +488,11 @@ function MobileMinerTable({
         <tbody>
           {data.map((miner, i) => {
             const isSelected = selectedDeviceIds.has(miner.deviceId);
+            const isMuted = !!muted[miner.deviceId];
             const rowBg = isSelected
               ? "bg-primary-500/10 hover:bg-primary-500/15"
+              : isMuted
+              ? "bg-amber-500/5 hover:bg-amber-500/10 border-l-2 border-l-amber-500/50"
               : i % 2 === 0
               ? "bg-dark-800 hover:bg-dark-700/50"
               : "bg-dark-800/60 hover:bg-dark-700/50";
@@ -555,10 +568,14 @@ function MobileMinerTable({
                 </td>
                 <td className="px-4 py-3">
                   <span
-                    className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium text-white ${statusBg(miner)}`}
+                    className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${
+                      isMuted
+                        ? "bg-amber-500/15 border border-amber-500/40 text-amber-300"
+                        : `text-white ${statusBg(miner)}`
+                    }`}
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-white/70" />
-                    {statusLabel}
+                    <span className={`w-1.5 h-1.5 rounded-full ${isMuted ? "bg-amber-400" : "bg-white/70"}`} />
+                    {isMuted ? "Muted" : statusLabel}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-xs text-slate-400 hidden xl:table-cell">
@@ -629,7 +646,18 @@ export default function MobileMinerList() {
   const [selectedDeviceIds, setSelectedDeviceIds] = useState<Set<string>>(new Set());
   const [bulkRunning, setBulkRunning] = useState(false);
 
+  const [muted, setMuted] = useState<Record<string, { mutedUntil: number | null }>>({});
+
   const historyRef = useRef<Map<string, HistoryPoint[]>>(new Map());
+
+  const loadMuted = useCallback(async () => {
+    try {
+      const map = await invoke<Record<string, { mutedUntil: number | null }>>("get_muted_devices");
+      setMuted(map);
+    } catch (err) {
+      console.error("Failed to load muted devices:", err);
+    }
+  }, []);
 
   const fetchMiners = useCallback(async () => {
     try {
@@ -754,11 +782,13 @@ export default function MobileMinerList() {
 
   useEffect(() => {
     fetchMiners();
+    loadMuted();
     invoke<string>("get_mobile_server_url").then(setServerUrl).catch(console.error);
     let unlisten: (() => void) | null = null;
     let cancelled = false;
     listen("farm-state-updated", () => {
       fetchMiners();
+      loadMuted();
     }).then((h) => {
       if (cancelled) h();
       else unlisten = h;
@@ -767,7 +797,7 @@ export default function MobileMinerList() {
       cancelled = true;
       if (unlisten) unlisten();
     };
-  }, [fetchMiners]);
+  }, [fetchMiners, loadMuted]);
 
   async function handleManualRefresh() {
     setRefreshing(true);
@@ -1340,6 +1370,7 @@ export default function MobileMinerList() {
           onSort={handleSort}
           coinIconByDevice={coinIconByDevice}
           onRemove={(m) => { setRemoveError(null); setRemoveTarget(m); }}
+          muted={muted}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -1356,6 +1387,7 @@ export default function MobileMinerList() {
               onRemove={() => { setRemoveError(null); setRemoveTarget(m); }}
               history={historyRef.current.get(m.deviceId) ?? []}
               coinIcon={coinIconByDevice[m.deviceId]}
+              isMuted={!!muted[m.deviceId]}
             />
           ))}
         </div>

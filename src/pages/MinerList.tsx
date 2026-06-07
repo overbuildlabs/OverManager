@@ -104,6 +104,7 @@ function MinerCard({
   uptimeStats,
   coinIcon,
   onRemove,
+  isMuted = false,
 }: {
   miner: MinerInfo;
   displayName: string;
@@ -114,6 +115,7 @@ function MinerCard({
   uptimeStats?: UptimeStats;
   coinIcon?: string | null;
   onRemove?: () => void;
+  isMuted?: boolean;
 }) {
   const statusColor =
     {
@@ -141,6 +143,8 @@ function MinerCard({
       className={`bg-dark-800 rounded-xl border p-5 cursor-pointer transition-all relative ${
         selectionMode && selected
           ? "border-primary-500 bg-primary-500/5"
+          : isMuted
+          ? "border-amber-500/40 bg-amber-500/5 hover:border-amber-500/60"
           : "border-slate-700/50 hover:border-primary-500/50 hover:bg-dark-800/80"
       }`}
       onClick={handleCardClick}
@@ -207,10 +211,14 @@ function MinerCard({
               </svg>
             </button>
             <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-white ${statusColor}`}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                isMuted
+                  ? "bg-amber-500/15 border border-amber-500/40 text-amber-300"
+                  : `text-white ${statusColor}`
+              }`}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-white/70" />
-              {miner.status}
+              <span className={`w-1.5 h-1.5 rounded-full ${isMuted ? "bg-amber-400" : "bg-white/70"}`} />
+              {isMuted ? "Muted" : miner.status}
             </span>
             {onRemove && (
               <button
@@ -305,6 +313,7 @@ function MinerTable({
   uptimeStats,
   coinIconByIp,
   onRemove,
+  muted,
 }: {
   data: MinerWithSaved[];
   selectedIps: Set<string>;
@@ -316,6 +325,7 @@ function MinerTable({
   uptimeStats: Record<string, UptimeStats>;
   coinIconByIp?: Record<string, string | null>;
   onRemove?: (ip: string) => void;
+  muted: Record<string, { mutedUntil: number | null }>;
 }) {
   const statusBg = (status: string) =>
     ({
@@ -449,8 +459,11 @@ function MinerTable({
               ? Math.max(...info.boards.map((b) => b.inTmp))
               : null;
             const activePool = info.pools.find((p) => p.connect);
+            const isMuted = !!muted[info.ip];
             const rowBg = isSelected
               ? "bg-primary-500/10 hover:bg-primary-500/15"
+              : isMuted
+              ? "bg-amber-500/5 hover:bg-amber-500/10 border-l-2 border-l-amber-500/50"
               : i % 2 === 0
               ? "bg-dark-800 hover:bg-dark-700/50"
               : "bg-dark-800/60 hover:bg-dark-700/50";
@@ -499,10 +512,14 @@ function MinerTable({
                 <td className="px-4 py-3 text-sm text-slate-400 font-mono">{info.ip}</td>
                 <td className="px-4 py-3">
                   <span
-                    className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium text-white ${statusBg(info.status)}`}
+                    className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${
+                      isMuted
+                        ? "bg-amber-500/15 border border-amber-500/40 text-amber-300"
+                        : `text-white ${statusBg(info.status)}`
+                    }`}
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-white/70" />
-                    {info.status}
+                    <span className={`w-1.5 h-1.5 rounded-full ${isMuted ? "bg-amber-400" : "bg-white/70"}`} />
+                    {isMuted ? "Muted" : info.status}
                   </span>
                 </td>
                 <td className="px-4 py-3 hidden md:table-cell">
@@ -611,7 +628,18 @@ export default function MinerList() {
 
   const [allUptimeStats, setAllUptimeStats] = useState<Record<string, UptimeStats>>({});
 
+  const [muted, setMuted] = useState<Record<string, { mutedUntil: number | null }>>({});
+
   const [showAddPanel, setShowAddPanel] = useState(false);
+
+  const loadMuted = useCallback(async () => {
+    try {
+      const map = await invoke<Record<string, { mutedUntil: number | null }>>("get_muted_devices");
+      setMuted(map);
+    } catch (err) {
+      console.error("Failed to load muted devices:", err);
+    }
+  }, []);
 
   // Sync coin filter if URL param changes
   useEffect(() => {
@@ -624,6 +652,10 @@ export default function MinerList() {
       .then(setAllUptimeStats)
       .catch(console.error);
   }, []);
+
+  useEffect(() => {
+    loadMuted();
+  }, [loadMuted]);
 
   const loadFromCache = useCallback(async (saved: SavedMiner[]) => {
     try {
@@ -692,6 +724,7 @@ export default function MinerList() {
     let cancelled = false;
     listen("farm-state-updated", () => {
       loadFromCache(savedMiners).catch(console.error);
+      loadMuted();
     }).then((h) => {
       if (cancelled) h();
       else unlisten = h;
@@ -700,7 +733,7 @@ export default function MinerList() {
       cancelled = true;
       if (unlisten) unlisten();
     };
-  }, [savedMiners, loadFromCache]);
+  }, [savedMiners, loadFromCache, loadMuted]);
 
   async function handleManualRefresh() {
     setRefreshing(true);
@@ -1325,6 +1358,7 @@ export default function MinerList() {
           uptimeStats={allUptimeStats}
           coinIconByIp={coinIconByIp}
           onRemove={(ip) => openRemoveModal([ip])}
+          muted={muted}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -1340,6 +1374,7 @@ export default function MinerList() {
               uptimeStats={allUptimeStats[d.info.ip]}
               coinIcon={coinIconByIp[d.info.ip]}
               onRemove={() => openRemoveModal([d.info.ip])}
+              isMuted={!!muted[d.info.ip]}
             />
           ))}
         </div>

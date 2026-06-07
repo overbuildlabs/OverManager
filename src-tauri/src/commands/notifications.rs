@@ -101,6 +101,32 @@ pub fn get_notification_status(_app: tauri::AppHandle) -> Result<String, String>
     Ok("enabled".to_string())
 }
 
+/// Open the OS notification-settings page. Done in the backend via the OS
+/// opener because the shell plugin's `open` URL validator rejects non-web
+/// schemes like `ms-settings:`, so the frontend can't deep-link to it directly.
+#[tauri::command]
+pub fn open_notification_settings() -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    std::process::Command::new("explorer")
+        .arg("ms-settings:notifications")
+        .spawn()
+        .map_err(|e| format!("Failed to open notification settings: {}", e))?;
+
+    #[cfg(target_os = "macos")]
+    std::process::Command::new("open")
+        .arg("x-apple.systempreferences:com.apple.preference.notifications")
+        .spawn()
+        .map_err(|e| format!("Failed to open notification settings: {}", e))?;
+
+    #[cfg(target_os = "linux")]
+    std::process::Command::new("gnome-control-center")
+        .arg("notifications")
+        .spawn()
+        .map_err(|e| format!("Failed to open notification settings: {}", e))?;
+
+    Ok(())
+}
+
 #[tauri::command]
 pub fn send_desktop_notification(
     app: tauri::AppHandle,

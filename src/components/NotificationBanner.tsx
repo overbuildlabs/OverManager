@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { open as openUrl } from "@tauri-apps/plugin-shell";
 
 /**
  * Warns when Windows notifications are turned off for OverManager. When the
@@ -47,7 +46,11 @@ export default function NotificationBanner() {
           Turn notifications back on in Windows Settings so alert toasts are delivered.
         </p>
         <button
-          onClick={() => openUrl("ms-settings:notifications")}
+          onClick={() =>
+            invoke("open_notification_settings").catch((err) =>
+              console.error("Failed to open notification settings:", err)
+            )
+          }
           className="mt-2 px-3 py-1.5 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-600/40 text-amber-200 text-xs font-medium rounded-lg transition-colors"
         >
           Open Windows notification settings
