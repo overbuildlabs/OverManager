@@ -35,6 +35,7 @@ use commands::alerts::{
 use commands::coins::{get_coins, add_coin, remove_coin};
 use commands::email::{get_smtp_config, save_smtp_config, test_smtp_config, send_alert_email};
 use commands::notifications::send_desktop_notification;
+use commands::mute::{get_muted_devices, set_device_mute, clear_device_mute};
 use commands::uptime::{record_uptime, get_uptime_stats, get_all_uptime_stats, clear_uptime_data};
 use commands::export::{export_miners_csv, export_alert_history_csv, export_profitability_csv, export_farm_history_csv};
 use commands::tray::{TrayState, update_tray_tooltip};
@@ -310,6 +311,9 @@ pub fn run() {
             acknowledge_alert,
             check_alerts,
             check_mobile_alerts,
+            get_muted_devices,
+            set_device_mute,
+            clear_device_mute,
             get_coins,
             add_coin,
             remove_coin,

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import type { MobileMiner, MobileCommand } from "../types/miner";
+import MuteControl from "../components/MuteControl";
 
 function formatHashrate(hs: number): string {
   if (hs >= 1e9) return `${(hs / 1e9).toFixed(2)} GH/s`;
@@ -156,11 +157,14 @@ export default function MobileMinerDetail() {
         ← Back to OverMobile
       </button>
 
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-white">{miner.name}</h2>
-        <p className="text-slate-400">
-          {miner.deviceModel} · {miner.osVersion} · v{miner.appVersion}
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-white">{miner.name}</h2>
+          <p className="text-slate-400">
+            {miner.deviceModel} · {miner.osVersion} · v{miner.appVersion}
+          </p>
+        </div>
+        <MuteControl id={miner.deviceId} className="flex-shrink-0" />
       </div>
 
       {/* Status overview */}
