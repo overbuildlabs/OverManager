@@ -387,6 +387,22 @@ pub fn mark_all_alerts_read() -> Result<bool, String> {
     Ok(changed)
 }
 
+/// Shape an AlertEvent into the cloud `POST /ingest/alert` contract:
+/// `{ ruleName, message, minerLabel?, minerId?, timestamp }`. We send the real
+/// trigger time (not backdated) and truncate `message` to the cloud's 1000-char
+/// limit. `minerId` carries the miner IP (ASIC) / device_id (mobile) — the same
+/// value the cloud echoes back on `alert-read`.
+fn cloud_alert_payload(event: &AlertEvent) -> serde_json::Value {
+    let message: String = event.message.chars().take(1000).collect();
+    serde_json::json!({
+        "ruleName": event.rule_name,
+        "message": message,
+        "minerLabel": (!event.miner_label.is_empty()).then(|| event.miner_label.clone()),
+        "minerId": (!event.miner_ip.is_empty()).then(|| event.miner_ip.clone()),
+        "timestamp": event.timestamp,
+    })
+}
+
 #[tauri::command]
 pub fn check_alerts(app: tauri::AppHandle, miners: Vec<MinerSnapshot>) -> Result<Vec<AlertEvent>, String> {
     let rules = load_rules();
@@ -569,11 +585,10 @@ pub fn check_alerts(app: tauri::AppHandle, miners: Vec<MinerSnapshot>) -> Result
             Some(cloud_state) if cloud_state.api_key.lock().unwrap().is_some() => {
                 let mut enqueued = 0u32;
                 for event in &triggered {
-                    if let Ok(payload) = serde_json::to_value(event) {
-                        match crate::cloud::queue::enqueue("alert", &payload) {
-                            Ok(()) => enqueued += 1,
-                            Err(e) => log::warn!("Cloud: failed to enqueue alert: {}", e),
-                        }
+                    let payload = cloud_alert_payload(event);
+                    match crate::cloud::queue::enqueue("alert", &payload) {
+                        Ok(()) => enqueued += 1,
+                        Err(e) => log::warn!("Cloud: failed to enqueue alert: {}", e),
                     }
                 }
                 log::info!("Cloud: enqueued {} alert(s) for sync", enqueued);
@@ -749,11 +764,10 @@ pub fn check_mobile_alerts(app: tauri::AppHandle, miners: Vec<MobileMinerSnapsho
             Some(cloud_state) if cloud_state.api_key.lock().unwrap().is_some() => {
                 let mut enqueued = 0u32;
                 for event in &triggered {
-                    if let Ok(payload) = serde_json::to_value(event) {
-                        match crate::cloud::queue::enqueue("alert", &payload) {
-                            Ok(()) => enqueued += 1,
-                            Err(e) => log::warn!("Cloud: failed to enqueue alert: {}", e),
-                        }
+                    let payload = cloud_alert_payload(event);
+                    match crate::cloud::queue::enqueue("alert", &payload) {
+                        Ok(()) => enqueued += 1,
+                        Err(e) => log::warn!("Cloud: failed to enqueue alert: {}", e),
                     }
                 }
                 log::info!("Cloud: enqueued {} alert(s) for sync", enqueued);
@@ -815,5 +829,27 @@ mod tests {
         // Mobile alerts carry the device_id in miner_ip; cloud sends it as minerId.
         let e = event("OverMobile Offline", "device-abc-123", "2026-06-07T10:00:00Z");
         assert!(alert_matches(&e, "OverMobile Offline", "device-abc-123", "2026-06-07T10:00:00Z"));
+    }
+
+    #[test]
+    fn cloud_payload_maps_contract_fields() {
+        let e = event("High Temperature", "192.168.1.5", "2026-06-07T10:00:00Z");
+        let p = cloud_alert_payload(&e);
+        assert_eq!(p["ruleName"], "High Temperature");
+        assert_eq!(p["message"], "msg");
+        assert_eq!(p["minerId"], "192.168.1.5"); // miner_ip → minerId
+        assert_eq!(p["minerLabel"], "Rig");
+        assert_eq!(p["timestamp"], "2026-06-07T10:00:00Z"); // real trigger time, not backdated
+    }
+
+    #[test]
+    fn cloud_payload_truncates_message_and_nulls_empty_fields() {
+        let mut e = event("R", "", "2026-06-07T10:00:00Z");
+        e.miner_label = String::new();
+        e.message = "x".repeat(1500);
+        let p = cloud_alert_payload(&e);
+        assert_eq!(p["message"].as_str().unwrap().chars().count(), 1000);
+        assert!(p["minerId"].is_null());
+        assert!(p["minerLabel"].is_null());
     }
 }
