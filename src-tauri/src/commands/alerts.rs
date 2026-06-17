@@ -331,8 +331,12 @@ pub fn acknowledge_alert(id: String) -> Result<(), String> {
 // exactly these three fields: `rule_name`, `miner_ip` (the cloud's `minerId`),
 // and `timestamp`. The cloud echoes them in the payload for this purpose.
 
-/// Compare two RFC-3339 timestamps. Falls back to instant equality so a format
-/// difference (e.g. `Z` vs `+00:00`) doesn't prevent a match.
+/// Compare two RFC-3339 timestamps at whole-second granularity. The desktop
+/// stores nanosecond precision, but a timestamp that round-trips through the
+/// cloud (Postgres truncates to microseconds; the WS broadcast re-encodes at
+/// millisecond precision) loses sub-second digits. Matching on the whole
+/// second is safe: alert cooldowns (15–30 min) guarantee the same rule+miner
+/// can't fire twice within one second. Falls back to string equality.
 fn timestamps_match(a: &str, b: &str) -> bool {
     if a == b {
         return true;
@@ -341,7 +345,7 @@ fn timestamps_match(a: &str, b: &str) -> bool {
         chrono::DateTime::parse_from_rfc3339(a),
         chrono::DateTime::parse_from_rfc3339(b),
     ) {
-        (Ok(da), Ok(db)) => da == db,
+        (Ok(da), Ok(db)) => da.timestamp() == db.timestamp(),
         _ => false,
     }
 }
