@@ -229,6 +229,28 @@ pub async fn push_alert(api_key: &str, payload: &serde_json::Value) -> Result<()
     Ok(())
 }
 
+/// Propagate a local "mark alert read" to the cloud so the portal and mobile
+/// app reflect it. The cloud matches the alert by tuple (ruleName, minerId,
+/// timestamp) — the desktop never stores the cloud's surrogate alertId.
+pub async fn push_alert_read(api_key: &str, payload: &serde_json::Value) -> Result<(), String> {
+    let client = http_client()?;
+    let resp = client
+        .post(api_url("/api/v1/ingest/alert-read"))
+        .header("X-API-Key", api_key)
+        .json(payload)
+        .send()
+        .await
+        .map_err(|e| format!("Alert-read push failed: {}", e))?;
+
+    if !resp.status().is_success() {
+        let status = resp.status().as_u16();
+        let body = resp.text().await.unwrap_or_default();
+        return Err(format!("Alert-read push failed ({}): {}", status, body));
+    }
+
+    Ok(())
+}
+
 pub async fn push_miners(api_key: &str, payload: &serde_json::Value) -> Result<(), String> {
     let client = http_client()?;
     let resp = client

@@ -313,12 +313,52 @@ pub fn clear_alert_history() -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn acknowledge_alert(id: String) -> Result<(), String> {
+pub async fn acknowledge_alert(
+    id: String,
+    state: tauri::State<'_, Arc<crate::cloud::CloudState>>,
+) -> Result<(), String> {
+    // 1. Mark the alert read locally, capturing its identity tuple so we can
+    //    mirror the read-state to the cloud (and thus the portal / mobile app).
+    //    Only newly-acked alerts need to be pushed.
     let mut history = load_history();
+    let mut tuple: Option<(String, String, String)> = None;
     if let Some(e) = history.iter_mut().find(|e| e.id == id) {
-        e.acknowledged = true;
+        if !e.acknowledged {
+            e.acknowledged = true;
+            tuple = Some((e.rule_name.clone(), e.miner_ip.clone(), e.timestamp.clone()));
+        }
     }
-    save_history(&history)
+    save_history(&history)?;
+
+    // 2. Propagate to the cloud. It matches by (ruleName, minerId, timestamp);
+    //    `minerIp` is the desktop's miner key, which the cloud accepts as a
+    //    minerId alias. Best-effort — queue for the sync loop to drain on
+    //    failure or when offline so it eventually reaches the cloud.
+    if let Some((rule_name, miner_ip, timestamp)) = tuple {
+        let payload = serde_json::json!({
+            "ruleName": rule_name,
+            "minerIp": miner_ip,
+            "timestamp": timestamp,
+        });
+        let api_key = state.api_key.lock().unwrap().clone();
+        let pushed = match api_key {
+            Some(key) => match crate::cloud::client::push_alert_read(&key, &payload).await {
+                Ok(()) => true,
+                Err(e) => {
+                    log::warn!("Cloud: alert-read push failed, queueing — {}", e);
+                    false
+                }
+            },
+            None => false,
+        };
+        if !pushed {
+            if let Err(qe) = crate::cloud::queue::enqueue("alert-read", &payload) {
+                log::warn!("Cloud: failed to enqueue alert-read: {}", qe);
+            }
+        }
+    }
+
+    Ok(())
 }
 
 // ─── Remote read-state sync (from cloud WebSocket) ───────────────────────────

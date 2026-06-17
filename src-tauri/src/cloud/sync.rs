@@ -107,6 +107,11 @@ pub async fn start_sync_loop(
                                 serde_json::from_str(&item.payload_json).unwrap_or_default();
                             client::push_alert(&api_key, &payload).await
                         }
+                        "alert-read" => {
+                            let payload: serde_json::Value =
+                                serde_json::from_str(&item.payload_json).unwrap_or_default();
+                            client::push_alert_read(&api_key, &payload).await
+                        }
                         "miners" => {
                             let payload: serde_json::Value =
                                 serde_json::from_str(&item.payload_json).unwrap_or_default();
