@@ -23,7 +23,7 @@ pub fn open_queue() -> Result<Connection, String> {
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS cloud_sync_queue (
             id              INTEGER PRIMARY KEY,
-            kind            TEXT NOT NULL CHECK (kind IN ('snapshot', 'alert', 'miners')),
+            kind            TEXT NOT NULL CHECK (kind IN ('snapshot', 'alert', 'miners', 'alert-read', 'alerts-read-all')),
             payload_json    TEXT NOT NULL,
             created_at      INTEGER NOT NULL,
             attempts        INTEGER NOT NULL DEFAULT 0,
@@ -34,9 +34,10 @@ pub fn open_queue() -> Result<Connection, String> {
             ON cloud_sync_queue(created_at);"
     ).map_err(|e| format!("Failed to create queue table: {}", e))?;
 
-    // Migration: older installs created the table with a CHECK that allowed
-    // only ('snapshot', 'alert'). SQLite can't ALTER a CHECK constraint, so
-    // rebuild the table when the existing definition doesn't include 'miners'.
+    // Migration: older installs created the table with a CHECK that didn't
+    // allow every kind the sync loop can now enqueue. SQLite can't ALTER a
+    // CHECK constraint, so rebuild the table when the existing definition is
+    // missing any of the current kinds.
     let existing_sql: String = conn
         .query_row(
             "SELECT sql FROM sqlite_master WHERE type='table' AND name='cloud_sync_queue'",
@@ -44,13 +45,13 @@ pub fn open_queue() -> Result<Connection, String> {
             |row| row.get(0),
         )
         .unwrap_or_default();
-    if !existing_sql.is_empty() && !existing_sql.contains("'miners'") {
-        log::info!("Cloud queue: migrating CHECK constraint to allow 'miners' kind");
+    if !existing_sql.is_empty() && !existing_sql.contains("'alert-read'") {
+        log::info!("Cloud queue: migrating CHECK constraint to allow 'alert-read'/'alerts-read-all' kinds");
         conn.execute_batch(
             "BEGIN;
              CREATE TABLE cloud_sync_queue_new (
                  id              INTEGER PRIMARY KEY,
-                 kind            TEXT NOT NULL CHECK (kind IN ('snapshot', 'alert', 'miners')),
+                 kind            TEXT NOT NULL CHECK (kind IN ('snapshot', 'alert', 'miners', 'alert-read', 'alerts-read-all')),
                  payload_json    TEXT NOT NULL,
                  created_at      INTEGER NOT NULL,
                  attempts        INTEGER NOT NULL DEFAULT 0,
