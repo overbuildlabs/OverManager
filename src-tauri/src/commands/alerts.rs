@@ -343,17 +343,24 @@ pub async fn acknowledge_alert(
         let api_key = state.api_key.lock().unwrap().clone();
         let pushed = match api_key {
             Some(key) => match crate::cloud::client::push_alert_read(&key, &payload).await {
-                Ok(()) => true,
+                Ok(()) => {
+                    log::info!("Cloud: alert-read pushed successfully ({})", rule_name);
+                    true
+                }
                 Err(e) => {
                     log::warn!("Cloud: alert-read push failed, queueing — {}", e);
                     false
                 }
             },
-            None => false,
+            None => {
+                log::warn!("Cloud: no api_key set, queueing alert-read instead of pushing");
+                false
+            }
         };
         if !pushed {
-            if let Err(qe) = crate::cloud::queue::enqueue("alert-read", &payload) {
-                log::warn!("Cloud: failed to enqueue alert-read: {}", qe);
+            match crate::cloud::queue::enqueue("alert-read", &payload) {
+                Ok(()) => log::info!("Cloud: enqueued alert-read for sync"),
+                Err(qe) => log::warn!("Cloud: failed to enqueue alert-read: {}", qe),
             }
         }
     }
