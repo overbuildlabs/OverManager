@@ -128,7 +128,7 @@ pub async fn start_sync_loop(
                     match result {
                         Ok(()) => {
                             let _ = queue::remove(item.id);
-                            log::debug!("Cloud sync: drained queue item {} ({})", item.id, item.kind);
+                            log::info!("Cloud sync: pushed queue item {} ({})", item.id, item.kind);
                         }
                         Err(e) => {
                             // Classify error
@@ -137,11 +137,26 @@ pub async fn start_sync_loop(
                                 log::warn!("Cloud sync: auth error, stopping drain — {}", e);
                                 break;
                             }
-                            // Transient or permanent — mark failed
+                            // Permanent bad-request (schema/validation) — retrying can
+                            // never succeed, so drop it. Otherwise one malformed item
+                            // sits at the front of the queue and starves everything
+                            // behind it (oldest-first drain).
+                            if e.contains("(400)") || e.contains("(422)") {
+                                let _ = queue::remove(item.id);
+                                log::warn!(
+                                    "Cloud sync: dropping queue item {} ({}) — permanent client error: {}",
+                                    item.id,
+                                    item.kind,
+                                    e
+                                );
+                                continue;
+                            }
+                            // Transient — mark failed and retry later
                             let _ = queue::mark_failed(item.id, &e);
-                            log::debug!(
-                                "Cloud sync: queue item {} failed (attempt {}): {}",
+                            log::warn!(
+                                "Cloud sync: queue item {} ({}) push failed (attempt {}): {}",
                                 item.id,
+                                item.kind,
                                 item.attempts + 1,
                                 e
                             );
