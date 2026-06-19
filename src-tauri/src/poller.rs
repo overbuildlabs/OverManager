@@ -478,6 +478,25 @@ fn stage_miners_for_cloud(
             .or_else(|| (!m.hostname.is_empty()).then(|| m.hostname.clone()));
         let coin = saved.map(|s| s.coin_id.clone());
 
+        // Pool data so the cloud reports the live pool just like the desktop's
+        // Pool Configuration card. `activePool` (the connected pool) drives the
+        // portal's Pool tile; the full `pools` list prefills the remote
+        // "switch pool" form. Active = the pool the miner is actually connected
+        // to (`connect`), or whose link is up (`state == 1`).
+        let active_pool = m.pools.iter().find(|p| p.connect || p.state == 1);
+        let pools: Vec<serde_json::Value> = m
+            .pools
+            .iter()
+            .map(|p| {
+                serde_json::json!({
+                    "no": p.no,
+                    "addr": p.addr,
+                    "user": p.user,
+                    "pass": p.pass,
+                })
+            })
+            .collect();
+
         miners_json.push(serde_json::json!({
             "minerType": "asic",
             "minerId": m.ip,
@@ -492,6 +511,14 @@ fn stage_miners_for_cloud(
                 "hashrateUnit": m.hashrate_unit,
                 "runtimeSecs": m.runtime_secs,
                 "hwErrors": m.hw_errors,
+                "activePool": active_pool.map(|p| serde_json::json!({
+                    "url": p.addr,
+                    "user": p.user,
+                    "accepted": p.accepted,
+                    "rejected": p.rejected,
+                    "diff": p.diff,
+                })),
+                "pools": pools,
             }
         }));
     }
