@@ -539,6 +539,22 @@ fn stage_miners_for_cloud(
         }));
     }
 
+    // The cloud rejects the whole batch (400 invalid_body) if any miner has an
+    // empty minerId, so drop those defensively — a device discovered without a
+    // stable id (e.g. an ESP32 with no MAC yet) must not clog the sync queue.
+    let before = miners_json.len();
+    miners_json.retain(|m| {
+        m.get("minerId")
+            .and_then(|v| v.as_str())
+            .map_or(false, |s| !s.is_empty())
+    });
+    if miners_json.len() != before {
+        log::warn!(
+            "Cloud: dropped {} miner(s) with an empty minerId before staging",
+            before - miners_json.len()
+        );
+    }
+
     if miners_json.is_empty() {
         // Nothing to push this cycle (no miners configured). Don't overwrite
         // the staged payload with an empty list — the API would happily store
