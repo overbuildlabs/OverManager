@@ -324,11 +324,13 @@ pub async fn acknowledge_alert(
     //    Only newly-acked alerts need to be pushed.
     let mut history = load_history();
     let mut tuple: Option<(String, String, String)> = None;
-    if let Some(e) = history.iter_mut().find(|e| e.id == id) {
-        if !e.acknowledged {
+    match history.iter_mut().find(|e| e.id == id) {
+        Some(e) if !e.acknowledged => {
             e.acknowledged = true;
             tuple = Some((e.rule_name.clone(), e.miner_ip.clone(), e.timestamp.clone()));
         }
+        Some(_) => log::debug!("Cloud: alert {} already acknowledged locally, no-op", id),
+        None => log::warn!("Cloud: acknowledge_alert called with unknown id {}", id),
     }
     save_history(&history)?;
 

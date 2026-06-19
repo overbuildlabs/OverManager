@@ -205,6 +205,12 @@ async fn handle_message<S>(
             let rule_name = data.get("ruleName").and_then(|v| v.as_str()).unwrap_or("");
             let miner_id = data.get("minerId").and_then(|v| v.as_str()).unwrap_or("");
             let timestamp = data.get("timestamp").and_then(|v| v.as_str()).unwrap_or("");
+            log::info!(
+                "Cloud WS: received alert-read (rule='{}', miner='{}', ts='{}')",
+                rule_name,
+                miner_id,
+                timestamp
+            );
 
             match crate::commands::alerts::mark_alert_read(rule_name, miner_id, timestamp) {
                 Ok(true) => {
@@ -215,7 +221,11 @@ async fn handle_message<S>(
                     );
                     let _ = app_handle.emit("alerts-updated", ());
                 }
-                Ok(false) => log::debug!(
+                // Was debug-level — invisible at the default log level, which made
+                // this branch indistinguishable from "message never arrived" when
+                // debugging individual-read sync. Bump to warn with the full tuple
+                // so a mismatch (e.g. minerId/timestamp drift) is diagnosable.
+                Ok(false) => log::warn!(
                     "Cloud WS: alert-read had no local match (rule='{}', miner='{}', ts='{}')",
                     rule_name,
                     miner_id,
