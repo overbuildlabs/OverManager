@@ -102,9 +102,11 @@ static SHARE_TRACKER: Mutex<Option<HashMap<String, (f64, Instant)>>> = Mutex::ne
 // Startup grace period — alerts are suppressed for the first N seconds after
 // the process starts so that stateful checks (NoShares, MinerOffline, etc.)
 // have time to warm up from a cold boot. Prevents alert storms when PoPManager
-// is restarted while miners are running normally.
+// is restarted while miners are running normally. Kept short (30s) so a user
+// who just launched the app isn't left wondering why nothing fires — that's
+// long enough for one or two poll cycles to establish a baseline.
 static STARTUP_INSTANT: Mutex<Option<Instant>> = Mutex::new(None);
-const STARTUP_GRACE_SECONDS: u64 = 300; // 5 minutes
+const STARTUP_GRACE_SECONDS: u64 = 30;
 
 fn within_startup_grace() -> (bool, u64) {
     let mut guard = match STARTUP_INSTANT.lock() {
@@ -322,11 +324,13 @@ pub async fn acknowledge_alert(
     //    Only newly-acked alerts need to be pushed.
     let mut history = load_history();
     let mut tuple: Option<(String, String, String)> = None;
-    if let Some(e) = history.iter_mut().find(|e| e.id == id) {
-        if !e.acknowledged {
+    match history.iter_mut().find(|e| e.id == id) {
+        Some(e) if !e.acknowledged => {
             e.acknowledged = true;
             tuple = Some((e.rule_name.clone(), e.miner_ip.clone(), e.timestamp.clone()));
         }
+        Some(_) => log::debug!("Cloud: alert {} already acknowledged locally, no-op", id),
+        None => log::warn!("Cloud: acknowledge_alert called with unknown id {}", id),
     }
     save_history(&history)?;
 
