@@ -309,8 +309,64 @@ pub fn get_alert_history() -> Result<Vec<AlertEvent>, String> {
     Ok(load_history())
 }
 
+/// Propagate a single (ruleName, minerIp, timestamp) read-state to the cloud.
+/// Best-effort — falls back to the offline queue for the sync loop to drain
+/// on failure or when offline, so it eventually reaches the cloud. Shared by
+/// `acknowledge_alert` (single) and `clear_alert_history` (bulk on clear).
+async fn push_alert_read_tuple(
+    state: &tauri::State<'_, Arc<crate::cloud::CloudState>>,
+    rule_name: String,
+    miner_ip: String,
+    timestamp: String,
+) {
+    let payload = serde_json::json!({
+        "ruleName": rule_name,
+        "minerIp": miner_ip,
+        "timestamp": timestamp,
+    });
+    let api_key = state.api_key.lock().unwrap().clone();
+    let pushed = match api_key {
+        Some(key) => match crate::cloud::client::push_alert_read(&key, &payload).await {
+            Ok(()) => {
+                log::info!("Cloud: alert-read pushed successfully ({})", rule_name);
+                true
+            }
+            Err(e) => {
+                log::warn!("Cloud: alert-read push failed, queueing — {}", e);
+                false
+            }
+        },
+        None => {
+            log::warn!("Cloud: no api_key set, queueing alert-read instead of pushing");
+            false
+        }
+    };
+    if !pushed {
+        match crate::cloud::queue::enqueue("alert-read", &payload) {
+            Ok(()) => log::info!("Cloud: enqueued alert-read for sync"),
+            Err(qe) => log::warn!("Cloud: failed to enqueue alert-read: {}", qe),
+        }
+    }
+}
+
 #[tauri::command]
-pub fn clear_alert_history() -> Result<(), String> {
+pub async fn clear_alert_history(
+    state: tauri::State<'_, Arc<crate::cloud::CloudState>>,
+) -> Result<(), String> {
+    // Clearing the local list is itself a bulk "mark read" — without pushing
+    // read-state for every still-unacknowledged alert first, the cloud (and
+    // thus the portal/mobile app) keeps showing them as unread forever, since
+    // the desktop has no other way to reference an alert it just deleted.
+    let history = load_history();
+    for e in history.iter().filter(|e| !e.acknowledged) {
+        push_alert_read_tuple(
+            &state,
+            e.rule_name.clone(),
+            e.miner_ip.clone(),
+            e.timestamp.clone(),
+        )
+        .await;
+    }
     save_history(&[])
 }
 
@@ -319,9 +375,9 @@ pub async fn acknowledge_alert(
     id: String,
     state: tauri::State<'_, Arc<crate::cloud::CloudState>>,
 ) -> Result<(), String> {
-    // 1. Mark the alert read locally, capturing its identity tuple so we can
-    //    mirror the read-state to the cloud (and thus the portal / mobile app).
-    //    Only newly-acked alerts need to be pushed.
+    // Mark the alert read locally, capturing its identity tuple so we can
+    // mirror the read-state to the cloud (and thus the portal / mobile app).
+    // Only newly-acked alerts need to be pushed.
     let mut history = load_history();
     let mut tuple: Option<(String, String, String)> = None;
     match history.iter_mut().find(|e| e.id == id) {
@@ -334,39 +390,8 @@ pub async fn acknowledge_alert(
     }
     save_history(&history)?;
 
-    // 2. Propagate to the cloud. It matches by (ruleName, minerId, timestamp);
-    //    `minerIp` is the desktop's miner key, which the cloud accepts as a
-    //    minerId alias. Best-effort — queue for the sync loop to drain on
-    //    failure or when offline so it eventually reaches the cloud.
     if let Some((rule_name, miner_ip, timestamp)) = tuple {
-        let payload = serde_json::json!({
-            "ruleName": rule_name,
-            "minerIp": miner_ip,
-            "timestamp": timestamp,
-        });
-        let api_key = state.api_key.lock().unwrap().clone();
-        let pushed = match api_key {
-            Some(key) => match crate::cloud::client::push_alert_read(&key, &payload).await {
-                Ok(()) => {
-                    log::info!("Cloud: alert-read pushed successfully ({})", rule_name);
-                    true
-                }
-                Err(e) => {
-                    log::warn!("Cloud: alert-read push failed, queueing — {}", e);
-                    false
-                }
-            },
-            None => {
-                log::warn!("Cloud: no api_key set, queueing alert-read instead of pushing");
-                false
-            }
-        };
-        if !pushed {
-            match crate::cloud::queue::enqueue("alert-read", &payload) {
-                Ok(()) => log::info!("Cloud: enqueued alert-read for sync"),
-                Err(qe) => log::warn!("Cloud: failed to enqueue alert-read: {}", qe),
-            }
-        }
+        push_alert_read_tuple(&state, rule_name, miner_ip, timestamp).await;
     }
 
     Ok(())
