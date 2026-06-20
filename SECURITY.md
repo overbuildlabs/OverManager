@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-If you discover a security vulnerability in PoPManager, **please do not open a public GitHub issue.** Instead, report it privately via email:
+If you discover a security vulnerability in OverManager, **please do not open a public GitHub issue.** Instead, report it privately via email:
 
 **Email:** [support@overbuildlabs.com](mailto:support@overbuildlabs.com)
 
@@ -16,19 +16,19 @@ We will acknowledge your report within 48 hours and work with you to understand 
 
 ## Scope
 
-PoPManager is a desktop application that communicates with mining hardware on the local network. Security-relevant areas include:
+OverManager is a desktop application that communicates with mining hardware on the local network. Security-relevant areas include:
 
 - **Mobile miner HTTP server** (port 8787) — accepts telemetry and commands from devices on the LAN
 - **Pairing code authentication** — single-use codes for device registration
 - **Per-device API keys** — used for report and command authentication
 - **SMTP credentials** — stored locally for email alert delivery
 - **Tauri updater** — verifies release signatures before applying updates
-- **Local data storage** — JSON files in `%LOCALAPPDATA%\PoPManager\`
+- **Local data storage** — JSON files in `%LOCALAPPDATA%\OverManager\` and `%APPDATA%\com.overbuildlabs.overmanager\`
 
 ## What is NOT in scope
 
 - Vulnerabilities in upstream dependencies (report those to the relevant project)
-- Issues that require physical access to the machine running PoPManager
+- Issues that require physical access to the machine running OverManager
 - Social engineering attacks
 - Denial of service against the local HTTP server (it's LAN-only by design)
 

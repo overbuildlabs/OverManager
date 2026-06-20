@@ -64,7 +64,7 @@ pub fn run() {
             tauri_plugin_log::Builder::new()
                 .targets([
                     Target::new(TargetKind::Stdout),
-                    Target::new(TargetKind::LogDir { file_name: Some("popmanager".into()) }),
+                    Target::new(TargetKind::LogDir { file_name: Some("overmanager".into()) }),
                 ])
                 .level(log::LevelFilter::Info)
                 .build(),
@@ -78,6 +78,7 @@ pub fn run() {
             // One-time, idempotent data-dir migration (PoPManager -> OverManager).
             // MUST run before any state loads so loaders read the migrated dir.
             migrate::migrate_data_dir();
+            migrate::migrate_identifier_data_dir(app.handle());
 
             #[cfg(target_os = "windows")]
             {

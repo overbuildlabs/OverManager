@@ -32,6 +32,35 @@ pub fn migrate_data_dir() {
     }
 }
 
+/// One-time, idempotent migration of the Tauri-identifier-scoped app data
+/// dir (preferences, history, uptime) from the legacy
+/// `com.proofofprints.popmanager` identifier to `com.overbuildlabs.overmanager`.
+///
+/// Same copy-not-move, filesystem-state-triggered approach as
+/// [`migrate_data_dir`], and independent of it — this covers
+/// `app.path().app_data_dir()` (and the matching log dir), which is derived
+/// from the Tauri `identifier` rather than the hand-rolled path in
+/// [`crate::paths`].
+pub fn migrate_identifier_data_dir(app: &tauri::AppHandle) {
+    use tauri::Manager;
+
+    let Some(data_dir) = dirs::data_dir() else { return };
+    let old = data_dir.join("com.proofofprints.popmanager");
+    let Ok(new) = app.path().app_data_dir() else { return };
+
+    if new.exists() || !old.exists() {
+        return;
+    }
+
+    match copy_dir_all(&old, &new) {
+        Ok(_) => log::info!("Migrated identifier data dir com.proofofprints.popmanager -> com.overbuildlabs.overmanager"),
+        Err(e) => {
+            let _ = std::fs::remove_dir_all(&new);
+            log::error!("Identifier data-dir migration failed ({e}); falling back to old dir");
+        }
+    }
+}
+
 /// Recursively copy `src` into `dst`, creating `dst` (and nested dirs) as
 /// needed. Files are copied byte-for-byte via `std::fs::copy`.
 fn copy_dir_all(src: &Path, dst: &Path) -> std::io::Result<()> {

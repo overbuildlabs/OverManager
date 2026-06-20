@@ -1,5 +1,34 @@
 # Changelog
 
+## v1.8.0
+
+### Licensing
+
+- OverManager is now closed-source. Versions prior to v1.8.0 remain available
+  under their original MIT License terms; v1.8.0 and later are licensed
+  proprietary ("All Rights Reserved" — see [LICENSE](LICENSE)). This does not
+  change anything about how the app works; bundled third-party open-source
+  dependencies keep their own licenses (see the in-app Third-Party Licenses
+  screen).
+
+### App identifier change (Windows/macOS/Linux)
+
+- The Tauri app identifier changed from `com.proofofprints.popmanager` to
+  `com.overbuildlabs.overmanager`, and the log file was renamed from
+  `popmanager.log` to `overmanager.log`. OverManager copies your existing
+  preferences, farm history, and uptime data from the old identifier's data
+  directory to the new one automatically and silently on first launch of
+  v1.8.0 — no action needed. The old directory is left in place as a backup.
+  *Windows: if you find the installer creates a second "Add or Remove
+  Programs" entry instead of upgrading in place, please report it — this is
+  the one case we couldn't fully verify in-house.*
+
+### Cleanup
+
+- Removed stale "PoPManager" branding and open-source claims from the README
+  and project docs (the app was renamed to OverManager well before this
+  release; some old text had been missed).
+
 ## v1.7.0
 
 ### New miner support

@@ -9,11 +9,11 @@ Tauri's auto-updater requires releases to be cryptographically signed. This ensu
 Run this once on your development machine:
 
 ```bash
-npx @tauri-apps/cli signer generate -w ~/.tauri/popmanager.key
+npx @tauri-apps/cli signer generate -w ~/.tauri/overmanager.key
 ```
 
 This creates:
-- **Private key** (`~/.tauri/popmanager.key`) — keep this secret, never commit it
+- **Private key** (`~/.tauri/overmanager.key`) — keep this secret, never commit it
 - **Public key** — displayed in the terminal output
 
 ### Configure the Public Key
@@ -28,10 +28,10 @@ Before building a release, set the private key path:
 
 ```bash
 # Windows (PowerShell)
-$env:TAURI_SIGNING_PRIVATE_KEY = Get-Content ~/.tauri/popmanager.key
+$env:TAURI_SIGNING_PRIVATE_KEY = Get-Content ~/.tauri/overmanager.key
 
 # Linux/Mac
-export TAURI_SIGNING_PRIVATE_KEY=$(cat ~/.tauri/popmanager.key)
+export TAURI_SIGNING_PRIVATE_KEY=$(cat ~/.tauri/overmanager.key)
 ```
 
 ## Creating a Release

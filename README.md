@@ -1,12 +1,12 @@
 # OverManager
 
-**Open-source, cross-platform miner management software for ASIC and mobile miners**
+**Cross-platform miner management software for ASIC and mobile miners**
 
 Built by [OverBuild Labs](https://overbuildlabs.com) | [Support: support@overbuildlabs.com](mailto:support@overbuildlabs.com)
 
 ## Overview
 
-OverManager is a free, open-source desktop application for monitoring and managing your cryptocurrency mining operation. Built with Tauri (Rust + React), it runs on Windows, Linux, and macOS without requiring a dedicated mining OS.
+OverManager is a desktop application for monitoring and managing your cryptocurrency mining operation. Built with Tauri (Rust + React), it runs on Windows, Linux, and macOS without requiring a dedicated mining OS.
 
 Manage ASIC miners on your local network *and* mobile miners running **OverMobile** *(coming soon)* on Android — all from one unified dashboard. Monitor hashrates, temperatures, battery levels, profitability, and manage pool configurations across your entire fleet.
 
@@ -20,7 +20,9 @@ Manage ASIC miners on your local network *and* mobile miners running **OverMobil
 - **Multi-manufacturer support:**
   - **IceRiver** — Full monitoring and control (KS0, KS0 Pro, KS1, KS2, KS3, KS5)
   - **Whatsminer/MicroBT** — Monitoring support (M50, M56, M60, M66 series)
-  - **Bitmain Antminer** — Read-only monitoring on stock firmware (S19, S21 series)
+  - **Bitmain Antminer** — Read-only monitoring on stock firmware (S17, S19, S21, L7, L9 series)
+  - **Bitaxe/AxeOS, NerdQaxe++** — Monitoring (open-source DIY ASICs)
+  - **NerdMiner_v2** — Monitoring via solo-pool account stats
 - Network scanner with auto-detection of miner manufacturer and subnet
 - Card and data grid views with search, sort, filter by coin/manufacturer/model/pool
 - Per-miner detail pages with hashrate charts, board temps, fan speeds
@@ -215,12 +217,14 @@ All configuration is stored locally on your machine. On Windows, data is split a
 - `coins.json` — configured cryptocurrencies
 - `smtp_config.json` — email notification settings
 
-**User data (`%APPDATA%\com.proofofprints.popmanager\`)** — preferences and time-series:
+**User data (`%APPDATA%\com.overbuildlabs.overmanager\`)** — preferences and time-series:
 - `preferences.json` — currency, pool fee, electricity cost, log level, etc.
 - `history.json` — farm hashrate snapshots
 - `uptime.json` — per-miner uptime tracking
 
-To fully back up your OverManager setup, copy both directories. Logs live in `%APPDATA%\com.proofofprints.popmanager\logs\popmanager.log`.
+To fully back up your OverManager setup, copy both directories. Logs live in `%APPDATA%\com.overbuildlabs.overmanager\logs\overmanager.log`.
+
+> Upgrading from a version prior to v1.8.0: data previously stored under `com.proofofprints.popmanager` is copied automatically to `com.overbuildlabs.overmanager` the first time you launch v1.8.0+. The old directory is left in place and can be removed manually once you've confirmed everything carried over.
 
 On Linux and macOS the layout follows each platform's XDG/Application Support conventions automatically.
 
@@ -230,11 +234,11 @@ Profitability estimates are calculated based on current network difficulty, bloc
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+Proprietary — see [LICENSE](LICENSE) for details. Versions released prior to v1.8.0 remain available under their original MIT License terms. OverManager bundles third-party open-source software; see the in-app Third-Party Licenses screen (Settings → Legal & License Information) or [public/legal/THIRD-PARTY-LICENSES.md](public/legal/THIRD-PARTY-LICENSES.md).
 
-## Contributing
+## Feedback & Testing
 
-Contributions welcome! If you have a miner model not currently supported, please open an issue with your miner's API details. See [docs/SUPPORTED_MINERS.md](docs/SUPPORTED_MINERS.md) for guidance.
+Found a bug, or have a miner model that isn't supported yet? Email [support@overbuildlabs.com](mailto:support@overbuildlabs.com) with your miner's make/model and API details, or open an issue if you have GitHub access. See [docs/SUPPORTED_MINERS.md](docs/SUPPORTED_MINERS.md) for what's currently supported.
 
 ## Contact
 

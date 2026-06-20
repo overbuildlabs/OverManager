@@ -4,7 +4,7 @@ OverManager is built on open-source software. This file lists every
 third-party package bundled into the application and the full text of
 the license it is distributed under, per the terms of those licenses.
 
-Generated for OverManager v1.7.0.
+Generated for OverManager v1.8.0.
 
 ## Rust crates (desktop backend)
 
@@ -6472,7 +6472,7 @@ DEALINGS IN THE SOFTWARE.
 
 ### MIT License (MIT)
 
-Used by: pop-manager 1.7.0
+Used by: pop-manager 1.8.0
 
 ```
 {\rtf1\ansi\deff0

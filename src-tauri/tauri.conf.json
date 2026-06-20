@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "OverManager",
-  "version": "1.7.0",
-  "identifier": "com.proofofprints.popmanager",
+  "version": "1.8.0",
+  "identifier": "com.overbuildlabs.overmanager",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",

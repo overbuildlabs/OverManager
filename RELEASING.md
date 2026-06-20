@@ -1,12 +1,12 @@
-# Releasing PoPManager
+# Releasing OverManager
 
 Step-by-step guide for cutting a new release.
 
 ## Prerequisites
 
-- Push access to `main` on [github.com/proofofprints/PoPManager](https://github.com/proofofprints/PoPManager)
+- Push access to `main` on [github.com/overbuildlabs/OverManager](https://github.com/overbuildlabs/OverManager)
 - The following GitHub Actions secrets must be set (Settings → Secrets and variables → Actions):
-  - `TAURI_SIGNING_PRIVATE_KEY` — Tauri updater signing private key (base64 string from `popmanager.key`)
+  - `TAURI_SIGNING_PRIVATE_KEY` — Tauri updater signing private key (base64 string from `overmanager.key`)
   - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` — password for the signing key
 - Tag ruleset allows you to create `v*` tags (you may need bypass permissions)
 
@@ -53,7 +53,7 @@ This triggers the `release.yml` GitHub Actions workflow, which:
 
 ### 4. Wait for CI (~15 minutes)
 
-Monitor progress at: https://github.com/proofofprints/PoPManager/actions
+Monitor progress at: https://github.com/overbuildlabs/OverManager/actions
 
 All 4 jobs must pass:
 - `build (windows-latest, x86_64-pc-windows-msvc)` → `.msi`, `.exe`
@@ -63,8 +63,8 @@ All 4 jobs must pass:
 
 ### 5. Review and publish the release
 
-1. Go to [Releases](https://github.com/proofofprints/PoPManager/releases)
-2. Find the draft release titled "PoPManager vX.Y.Z"
+1. Go to [Releases](https://github.com/overbuildlabs/OverManager/releases)
+2. Find the draft release titled "OverManager vX.Y.Z"
 3. Verify the expected assets are attached:
    - Installers for all platforms
    - `.sig` signature files for each installer
@@ -74,7 +74,7 @@ All 4 jobs must pass:
 
 ### 6. Verify the updater
 
-Open PoPManager (running the previous version) → Settings → Check for Updates. It should show the new version as available.
+Open OverManager (running the previous version) → Settings → Check for Updates. It should show the new version as available.
 
 ## Troubleshooting
 
@@ -84,7 +84,7 @@ The `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` GitHub secret doesn't match the key. Ed
 
 ### Build fails with "Base64 conversion failed - was an actual public key given?"
 
-The `pubkey` field in `tauri.conf.json` contains the wrong value. It must be the **public** key (from `popmanager.key.pub`), not the private key. The public key decodes to text starting with "minisign public key". The private key decodes to "rsign encrypted secret key" — if you see that, you have them swapped.
+The `pubkey` field in `tauri.conf.json` contains the wrong value. It must be the **public** key (from `overmanager.key.pub`), not the private key. The public key decodes to text starting with "minisign public key". The private key decodes to "rsign encrypted secret key" — if you see that, you have them swapped.
 
 ### Build fails with "Signature not found for the updater JSON. Skipping upload..."
 
@@ -112,15 +112,15 @@ The `latest.json` file doesn't exist at the expected URL. This happens when:
 ## Signing key management
 
 The signing keypair lives at:
-- **Private key:** `L:\PoPManager\~\.tauri\popmanager.key` (also stored as `TAURI_SIGNING_PRIVATE_KEY` GitHub secret)
-- **Public key:** `L:\PoPManager\~\.tauri\popmanager.key.pub` (also in `tauri.conf.json` → `plugins.updater.pubkey`)
+- **Private key:** `L:\OverManager\~\.tauri\overmanager.key` (also stored as `TAURI_SIGNING_PRIVATE_KEY` GitHub secret)
+- **Public key:** `L:\OverManager\~\.tauri\overmanager.key.pub` (also in `tauri.conf.json` → `plugins.updater.pubkey`)
 
 ### Regenerating the keypair
 
 If you lose the private key or need to rotate:
 
 ```bash
-npx @tauri-apps/cli signer generate -w "L:\PoPManager\~\.tauri\popmanager.key" --force
+npx @tauri-apps/cli signer generate -w "L:\OverManager\~\.tauri\overmanager.key" --force
 ```
 
 Then update:
@@ -137,9 +137,27 @@ Then update:
 | `.github/workflows/release.yml` | Push `v*` tag | Cross-platform release builds |
 | `.github/workflows/ci.yml` | PR to `main` | TypeScript + Rust checks |
 
+## Windows upgrade risk (identifier change in v1.8.0)
+
+The Tauri `identifier` field (`tauri.conf.json`) changed from
+`com.proofofprints.popmanager` to `com.overbuildlabs.overmanager` in v1.8.0.
+WiX derives the MSI "upgrade code" deterministically from this identifier
+unless `bundle.windows.wix.upgradeCode` is pinned explicitly — it isn't
+currently pinned. That means the v1.8.0 MSI may install side-by-side with
+older versions on Windows instead of upgrading in place.
+
+Before publishing the v1.8.0 Windows build:
+1. Build the MSI and check whether installing it over an existing pre-1.8.0
+   install upgrades cleanly or creates a second entry in "Add or Remove Programs."
+2. If it doesn't upgrade in place, pin `bundle.windows.wix.upgradeCode` to the
+   upgrade code WiX generated for the pre-1.8.0 identifier (extractable from an
+   old `.msi` via `msiexec` or an MSI viewer) so future releases keep upgrading
+   correctly, and document in the release notes that affected users should
+   uninstall the old version manually once.
+
 ## Version numbering
 
-PoPManager follows [Semantic Versioning](https://semver.org/):
+OverManager follows [Semantic Versioning](https://semver.org/):
 - **Major** (X.0.0) — breaking changes or major feature overhauls
 - **Minor** (0.X.0) — new features, backward compatible
 - **Patch** (0.0.X) — bug fixes, minor polish

@@ -2,7 +2,7 @@
 
 ## Our commitment
 
-PoPManager is an open and welcoming project. We are committed to making participation a positive experience for everyone, regardless of experience level, background, or identity.
+OverManager is committed to making participation in its community spaces — testing feedback, bug reports, support requests — a positive experience for everyone, regardless of experience level, background, or identity.
 
 ## Expected behavior
 
@@ -24,4 +24,4 @@ Instances of unacceptable behavior may be reported to [support@overbuildlabs.com
 
 ## Scope
 
-This Code of Conduct applies to all project spaces — GitHub issues, pull requests, discussions, and any other communication channels associated with PoPManager.
+This Code of Conduct applies to all project spaces — GitHub issues, pull requests, discussions, and any other communication channels associated with OverManager.

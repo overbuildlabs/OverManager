@@ -2,17 +2,17 @@ use mdns_sd::{ServiceDaemon, ServiceInfo};
 
 const SERVICE_TYPE: &str = "_popmanager._tcp.local.";
 
-/// Register PoPManager as an mDNS service on the local network.
+/// Register OverManager as an mDNS service on the local network.
 /// Returns the ServiceDaemon handle which must be kept alive for the
 /// advertisement to remain active. Drop it or call `unregister` to stop.
 pub fn register(port: u16) -> Result<ServiceDaemon, String> {
     let daemon =
         ServiceDaemon::new().map_err(|e| format!("Failed to create mDNS daemon: {}", e))?;
 
-    // Use COMPUTERNAME on Windows, HOSTNAME on Unix, fall back to "PoPManager".
+    // Use COMPUTERNAME on Windows, HOSTNAME on Unix, fall back to "OverManager".
     let hostname = std::env::var("COMPUTERNAME")
         .or_else(|_| std::env::var("HOSTNAME"))
-        .unwrap_or_else(|_| "PoPManager".to_string());
+        .unwrap_or_else(|_| "OverManager".to_string());
 
     let instance_name = hostname.clone();
 
@@ -42,7 +42,7 @@ pub fn register(port: u16) -> Result<ServiceDaemon, String> {
         .map_err(|e| format!("Failed to register mDNS service: {}", e))?;
 
     log::info!(
-        "mDNS: advertising PoPManager as {}.{} on port {}",
+        "mDNS: advertising OverManager as {}.{} on port {}",
         instance_name,
         SERVICE_TYPE,
         port

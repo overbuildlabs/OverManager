@@ -1,7 +1,7 @@
 use tauri_plugin_notification::NotificationExt;
 
 /// Register the app's AUMID in the user registry and set it as the current
-/// process AUMID so Windows attributes toast notifications to "PoPManager"
+/// process AUMID so Windows attributes toast notifications to `display_name`
 /// even in dev mode.
 #[cfg(target_os = "windows")]
 pub fn setup_windows_aumid(identifier: &str, display_name: &str) {

@@ -3410,7 +3410,7 @@ dependencies = [
 
 [[package]]
 name = "pop-manager"
-version = "1.7.0"
+version = "1.8.0"
 dependencies = [
  "axum",
  "chrono",

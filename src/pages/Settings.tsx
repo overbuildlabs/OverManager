@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
-import { open as openUrl } from "@tauri-apps/plugin-shell";
 import { check } from "@tauri-apps/plugin-updater";
 import { getVersion } from "@tauri-apps/api/app";
 import { appLogDir } from "@tauri-apps/api/path";
@@ -254,9 +253,9 @@ export default function Settings() {
     setLogExporting(true);
     try {
       const dir = await appLogDir();
-      const logPath = dir + "/popmanager.log";
+      const logPath = dir + "/overmanager.log";
       const content = await readTextFile(logPath);
-      const filePath = await save({ filters: [{ name: "Log", extensions: ["log", "txt"] }], defaultPath: "popmanager.log" });
+      const filePath = await save({ filters: [{ name: "Log", extensions: ["log", "txt"] }], defaultPath: "overmanager.log" });
       if (filePath) {
         await writeTextFile(filePath, content);
       }
@@ -775,7 +774,7 @@ export default function Settings() {
             />
             <div>
               <h4 className="text-xl font-bold text-white">OverManager</h4>
-              <p className="text-xs text-slate-500 mt-0.5">Open-source ASIC miner management</p>
+              <p className="text-xs text-slate-500 mt-0.5">ASIC and mobile miner management</p>
             </div>
           </div>
 
@@ -795,20 +794,11 @@ export default function Settings() {
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">License</span>
-              <span className="text-slate-200">MIT</span>
+              <span className="text-slate-200">Proprietary</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Supported Hardware</span>
               <span className="text-slate-200">Iceriver KS0-KS5, Whatsminer M50/M56/M60/M66, Antminer S17/S19/S21/L7/L9, Bitaxe/AxeOS, NerdMiner_v2</span>
-            </div>
-            <div className="flex justify-between items-center pt-1">
-              <span className="text-slate-500">GitHub</span>
-              <button
-                onClick={() => openUrl("https://github.com/overbuildlabs/OverManager")}
-                className="text-primary-400 hover:text-primary-300 transition-colors text-sm"
-              >
-                github.com/overbuildlabs/OverManager
-              </button>
             </div>
           </div>
           <div className="mt-4 pt-4 border-t border-slate-700/50">
@@ -833,7 +823,7 @@ export default function Settings() {
                 <div>
                   <p className="text-slate-400 font-medium mb-1">No Support Guarantee</p>
                   <p>
-                    OverManager is an open-source project maintained on a best-effort basis. No support, service level agreement, or uptime guarantee is provided. Bug reports and feature requests may be submitted through the project's GitHub repository, but the maintainers make no commitment to respond or resolve issues within any specific timeframe.
+                    OverManager is maintained on a best-effort basis. No service level agreement or uptime guarantee is provided. Bug reports and feature requests may be submitted to support@overbuildlabs.com, but the maintainers make no commitment to respond or resolve issues within any specific timeframe.
                   </p>
                 </div>
                 <div>
@@ -855,9 +845,9 @@ export default function Settings() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-slate-400 font-medium mb-1">MIT License</p>
+                  <p className="text-slate-400 font-medium mb-1">License</p>
                   <p>
-                    Copyright (c) 2026 OverBuild Labs. Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, subject to the conditions of the MIT License. Full license text available in the project's LICENSE file on GitHub.
+                    Copyright (c) 2024-2026 OverBuild Labs. All Rights Reserved. This software is proprietary and is licensed, not sold; use is governed by the Terms of Service accepted at signup. Versions of OverManager released prior to v1.8.0 remain available under the original MIT License terms for anyone who obtained them at that time.
                   </p>
                 </div>
                 <div>
