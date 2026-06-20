@@ -7,6 +7,7 @@ use tokio::sync::Notify;
 use crate::commands::history::FarmSnapshot;
 use crate::commands::miner::MinerInfo;
 use crate::commands::mobile_miner::{MobileMiner, MobileMinersState};
+use crate::commands::nerdminer::NerdMinerInfo;
 use crate::popminer_device::{PopMinerDevice, PopMinerDevicesState};
 
 /// Always-on cache populated by the background poller. The frontend reads
@@ -14,6 +15,7 @@ use crate::popminer_device::{PopMinerDevice, PopMinerDevicesState};
 /// in sync. Frontend pages no longer poll directly.
 pub struct CachedFarmState {
     pub asic_miners: Mutex<Vec<MinerInfo>>,
+    pub nerdminers: Mutex<Vec<NerdMinerInfo>>,
     pub farm_snapshot: Mutex<Option<FarmSnapshot>>,
     pub last_asic_poll_ms: Mutex<i64>,
     pub last_snapshot_ms: Mutex<i64>,
@@ -25,6 +27,7 @@ impl CachedFarmState {
     pub fn new() -> Self {
         CachedFarmState {
             asic_miners: Mutex::new(Vec::new()),
+            nerdminers: Mutex::new(Vec::new()),
             farm_snapshot: Mutex::new(None),
             last_asic_poll_ms: Mutex::new(0),
             last_snapshot_ms: Mutex::new(0),
@@ -39,6 +42,7 @@ impl CachedFarmState {
 #[serde(rename_all = "camelCase")]
 pub struct CachedFarmStateResponse {
     pub asic_miners: Vec<MinerInfo>,
+    pub nerdminers: Vec<NerdMinerInfo>,
     pub mobile_miners: Vec<MobileMiner>,
     pub popminer_devices: Vec<PopMinerDevice>,
     pub farm_snapshot: Option<FarmSnapshot>,
@@ -54,12 +58,20 @@ pub fn get_cached_asic_miners(
 }
 
 #[tauri::command]
+pub fn get_cached_nerdminers(
+    state: tauri::State<Arc<CachedFarmState>>,
+) -> Vec<NerdMinerInfo> {
+    state.nerdminers.lock().unwrap().clone()
+}
+
+#[tauri::command]
 pub fn get_cached_farm_state(
     cache: tauri::State<Arc<CachedFarmState>>,
     mobile: tauri::State<Arc<MobileMinersState>>,
     popminer: tauri::State<Arc<PopMinerDevicesState>>,
 ) -> CachedFarmStateResponse {
     let asic_miners = cache.asic_miners.lock().unwrap().clone();
+    let nerdminers = cache.nerdminers.lock().unwrap().clone();
     let farm_snapshot = cache.farm_snapshot.lock().unwrap().clone();
     let last_asic_poll_ms = *cache.last_asic_poll_ms.lock().unwrap();
     let last_snapshot_ms = *cache.last_snapshot_ms.lock().unwrap();
@@ -80,6 +92,7 @@ pub fn get_cached_farm_state(
 
     CachedFarmStateResponse {
         asic_miners,
+        nerdminers,
         mobile_miners,
         popminer_devices,
         farm_snapshot,

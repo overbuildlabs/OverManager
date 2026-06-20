@@ -21,6 +21,10 @@ const SNAPSHOT_INTERVAL_SECS: u64 = 60;
 const INITIAL_ASIC_DELAY_SECS: u64 = 5;
 // Snapshot needs at least one ASIC poll cycle to have completed.
 const INITIAL_SNAPSHOT_DELAY_SECS: u64 = 60;
+// NerdMiner hits a public pool's web server (not a LAN device), so poll it
+// far less aggressively than the ASIC LAN cycle.
+const NERDMINER_POLL_INTERVAL_SECS: u64 = 120;
+const INITIAL_NERDMINER_DELAY_SECS: u64 = 10;
 
 /// Spawn all background polling tasks. Called once from the Tauri setup hook.
 pub fn spawn_all(
@@ -55,6 +59,15 @@ pub fn spawn_all(
         let popminer_state = Arc::clone(&popminer_state);
         tauri::async_runtime::spawn(async move {
             snapshot_loop(app, cache, mobile_state, popminer_state).await;
+        });
+    }
+
+    // Task 4: NerdMiner pool-stats poller (120s)
+    {
+        let app = app.clone();
+        let cache = Arc::clone(&cache);
+        tauri::async_runtime::spawn(async move {
+            nerdminer_poll_loop(app, cache).await;
         });
     }
 
@@ -266,6 +279,52 @@ fn display_name(m: &MinerInfo, saved: &[SavedMiner]) -> String {
     } else {
         m.ip.clone()
     }
+}
+
+// ─── NerdMiner poller ───────────────────────────────────────────────────────
+
+async fn nerdminer_poll_loop(app: AppHandle, cache: Arc<CachedFarmState>) {
+    log::info!(
+        "Background poller: NerdMiner task starting (initial delay {}s)",
+        INITIAL_NERDMINER_DELAY_SECS
+    );
+    tokio::time::sleep(Duration::from_secs(INITIAL_NERDMINER_DELAY_SECS)).await;
+
+    loop {
+        run_nerdminer_poll_cycle(&app, &cache).await;
+        tokio::time::sleep(Duration::from_secs(NERDMINER_POLL_INTERVAL_SECS)).await;
+    }
+}
+
+async fn run_nerdminer_poll_cycle(app: &AppHandle, cache: &Arc<CachedFarmState>) {
+    let saved = crate::commands::nerdminer::get_saved_nerdminers().unwrap_or_default();
+
+    if saved.is_empty() {
+        cache.nerdminers.lock().unwrap().clear();
+        return;
+    }
+
+    log::debug!("NerdMiner poll: fetching {} saved address(es)", saved.len());
+
+    let mut join_set = tokio::task::JoinSet::new();
+    for s in saved {
+        join_set.spawn(async move { crate::commands::nerdminer::fetch_nerdminer_info(&s).await });
+    }
+
+    let mut data = Vec::new();
+    while let Some(join_result) = join_set.join_next().await {
+        match join_result {
+            Ok(info) => data.push(info),
+            Err(e) => log::warn!("NerdMiner poll: task panicked: {}", e),
+        }
+    }
+
+    {
+        let mut slot = cache.nerdminers.lock().unwrap();
+        *slot = data;
+    }
+
+    let _ = app.emit("farm-state-updated", ());
 }
 
 // ─── Mobile alert task ──────────────────────────────────────────────────────

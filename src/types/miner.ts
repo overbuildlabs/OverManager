@@ -262,6 +262,34 @@ export interface PopMinerDevice {
   consecutiveFailures: number;
 }
 
+export interface SavedNerdMiner {
+  id: string;
+  label: string;
+  address: string;
+  worker: string;
+  pool_host: string;
+  added_at: string;
+}
+
+export interface NerdMinerInfo {
+  id: string;
+  label: string;
+  address: string;
+  worker: string;
+  poolHost: string;
+  online: boolean;
+  hashrate1mHs: number;
+  hashrate5mHs: number;
+  hashrate1hrHs: number;
+  workers: number;
+  shares: number;
+  bestShareDiff: number;
+  bestEverDiff: number;
+  lastShareUnix: number;
+  lastSeen: string;
+  error: string | null;
+}
+
 /** Convert a saved PoolProfile to the API payload format. */
 export function profileToPayload(p: PoolProfile): PoolConfigPayload {
   return {

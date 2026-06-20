@@ -8,6 +8,7 @@ pub mod export;
 pub mod history;
 pub mod miner;
 pub mod mute;
+pub mod nerdminer;
 pub mod notifications;
 pub mod pool;
 pub mod pool_profiles;

@@ -11,6 +11,7 @@ import Pools from "./pages/Pools";
 import MobileMinerList from "./pages/MobileMinerList";
 import MobileMinerDetail from "./pages/MobileMinerDetail";
 import PopMinerList from "./pages/PopMinerList";
+import NerdMinerList from "./pages/NerdMinerList";
 import { ProfitabilityProvider } from "./context/ProfitabilityContext";
 import { AlertProvider } from "./context/AlertContext";
 
@@ -57,6 +58,7 @@ function App() {
                   <Route path="/mobile-miners" element={<MobileMinerList />} />
                   <Route path="/mobile-miners/:deviceId" element={<MobileMinerDetail />} />
                   <Route path="/popminer-devices" element={<PopMinerList />} />
+                  <Route path="/nerdminers" element={<NerdMinerList />} />
                   <Route path="/pools" element={<Pools />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/miner/:ip" element={<MinerDetail />} />

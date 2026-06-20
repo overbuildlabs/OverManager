@@ -42,7 +42,10 @@ use commands::tray::{TrayState, update_tray_tooltip};
 use popminer_device::{get_popminer_devices, get_discovered_popminer_devices, add_popminer_device, remove_popminer_device};
 use cached_state::{
     CachedFarmState, get_cached_asic_miners, get_cached_farm_state, get_last_poll_time,
-    force_poll_asic, force_poll_single_miner,
+    force_poll_asic, force_poll_single_miner, get_cached_nerdminers,
+};
+use commands::nerdminer::{
+    get_saved_nerdminers, add_nerdminer, remove_nerdminer, update_nerdminer_label,
 };
 use commands::mobile_miner::{
     get_mobile_miners, remove_mobile_miner, update_mobile_miner_name,
@@ -364,6 +367,11 @@ pub fn run() {
             get_last_poll_time,
             force_poll_asic,
             force_poll_single_miner,
+            get_cached_nerdminers,
+            get_saved_nerdminers,
+            add_nerdminer,
+            remove_nerdminer,
+            update_nerdminer_label,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
