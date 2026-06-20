@@ -213,5 +213,10 @@ fn estimate_antminer_wattage(model: &str) -> f64 {
     else if m.contains("s19") && m.contains("pro") { 3250.0 }
     else if m.contains("s19") { 3250.0 }
     else if m.contains("s17") { 2520.0 }
+    // Scrypt (LTC/DOGE) models — same CGMiner TCP/4028 API as the SHA-256
+    // models above, just a different ASIC. Wattage is from Bitmain's
+    // published spec sheet; not yet confirmed against a physical L7/L9.
+    else if m.contains("l9") { 3360.0 }
+    else if m.contains("l7") { 3425.0 }
     else { 3000.0 }
 }

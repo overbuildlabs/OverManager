@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
@@ -798,7 +799,7 @@ export default function Settings() {
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Supported Hardware</span>
-              <span className="text-slate-200">Iceriver KS0-KS5, Whatsminer M50/M56/M60/M66, Antminer S19/S21</span>
+              <span className="text-slate-200">Iceriver KS0-KS5, Whatsminer M50/M56/M60/M66, Antminer S17/S19/S21/L7/L9, Bitaxe/AxeOS, NerdMiner_v2</span>
             </div>
             <div className="flex justify-between items-center pt-1">
               <span className="text-slate-500">GitHub</span>
@@ -857,6 +858,16 @@ export default function Settings() {
                   <p className="text-slate-400 font-medium mb-1">MIT License</p>
                   <p>
                     Copyright (c) 2026 OverBuild Labs. Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, subject to the conditions of the MIT License. Full license text available in the project's LICENSE file on GitHub.
+                  </p>
+                </div>
+                <div>
+                  <p className="text-slate-400 font-medium mb-1">Third-Party Software</p>
+                  <p>
+                    OverManager is built using open-source third-party libraries and packages, each distributed under its own license (MIT, Apache-2.0, ISC, BSD, and others).{" "}
+                    <Link to="/licenses" className="text-primary-400 hover:text-primary-300 transition-colors">
+                      View the full third-party license list
+                    </Link>
+                    .
                   </p>
                 </div>
               </div>
