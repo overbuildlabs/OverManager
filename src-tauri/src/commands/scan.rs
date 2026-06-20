@@ -19,6 +19,12 @@ async fn probe_ip(ip_str: String) -> Option<MinerInfo> {
         return Some(info);
     }
 
+    // 1b. Try Bitaxe / NerdQaxe++ / other AxeOS-firmware devices (HTTP port 80)
+    if let Ok(info) = super::bitaxe::fetch_bitaxe_info(&ip_str).await {
+        log::info!("Scan: {} → bitaxe ({})", ip_str, info.model);
+        return Some(info);
+    }
+
     // 2. Try TCP port 4028
     let addr = format!("{}:4028", ip_str);
     let stream = tokio::time::timeout(
@@ -50,7 +56,7 @@ async fn probe_ip(ip_str: String) -> Option<MinerInfo> {
     None
 }
 
-/// Scan the given CIDR range for ASIC miners (IceRiver, Whatsminer, Antminer).
+/// Scan the given CIDR range for ASIC miners (IceRiver, Whatsminer, Antminer, Bitaxe/AxeOS).
 #[command]
 pub async fn scan_network(cidr: String) -> Result<ScanResult, String> {
     use ipnetwork::IpNetwork;

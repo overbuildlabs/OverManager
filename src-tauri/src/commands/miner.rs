@@ -423,6 +423,7 @@ pub async fn get_miner_status(ip: String, manufacturer: Option<String>) -> Resul
         "iceriver" => fetch_iceriver_info(ip).await,
         "whatsminer" => super::whatsminer::fetch_whatsminer_info(&ip).await,
         "antminer" => super::antminer::fetch_antminer_info(&ip).await,
+        "bitaxe" => super::bitaxe::fetch_bitaxe_info(&ip).await,
         _ => {
             // Auto-detect: try each in sequence
             log::info!("Auto-detecting manufacturer for {}", ip);
@@ -433,6 +434,9 @@ pub async fn get_miner_status(ip: String, manufacturer: Option<String>) -> Resul
                 return Ok(info);
             }
             if let Ok(info) = super::antminer::fetch_antminer_info(&ip).await {
+                return Ok(info);
+            }
+            if let Ok(info) = super::bitaxe::fetch_bitaxe_info(&ip).await {
                 return Ok(info);
             }
             Err(format!("Could not connect to miner at {}", ip))
