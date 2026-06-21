@@ -1,21 +1,38 @@
-MIT License
+OverManager — Proprietary Software License
 
-Copyright (c) 2024-2026 OverBuild Labs
+Copyright (c) 2026 OverBuild Labs. All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+OverManager (the "Software") is the confidential and proprietary property of
+OverBuild Labs. The compiled application is made available for download and use
+subject to the following terms. By installing or using the Software, you agree
+to these terms.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. License Grant. OverBuild Labs grants you a personal, non-exclusive,
+   non-transferable, revocable license to install and use the compiled
+   OverManager application to manage your own mining operations.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+2. Restrictions. You may not: (a) copy, distribute, sell, sublicense, rent, or
+   lease the Software; (b) reverse engineer, decompile, or disassemble the
+   Software, except to the extent this restriction is prohibited by applicable
+   law; (c) modify or create derivative works of the Software; or (d) remove or
+   alter any proprietary notices.
+
+3. Ownership. The Software is licensed, not sold. OverBuild Labs retains all
+   right, title, and interest in and to the Software, including all intellectual
+   property rights therein.
+
+4. No Warranty. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+
+5. Limitation of Liability. IN NO EVENT SHALL OVERBUILD LABS BE LIABLE FOR ANY
+   CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR
+   OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+   OR OTHER DEALINGS IN THE SOFTWARE.
+
+6. Prior Releases. Versions of OverManager (and its predecessor PoPManager)
+   previously distributed under the MIT License remain available under the MIT
+   License for those specific versions. This license governs version 1.8.0 and
+   all later versions.
+
+For licensing inquiries, contact support@overbuildlabs.com.
