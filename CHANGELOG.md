@@ -1,5 +1,46 @@
 # Changelog
 
+## v1.8.2
+
+### Cloud
+
+- **NerdMiner_v2 units now sync to OverManager Cloud.** Stock-firmware
+  NerdMiners (added by BTC address) join your ASIC, OverMiner, and mobile
+  miners in the cloud — so they show up in the web portal and the OverManager
+  mobile app with live hashrate, online status, and pool share stats, not just
+  on the desktop. NerdMiners stay monitor-only everywhere they appear.
+
+## v1.8.1
+
+### Fixed
+
+- **NerdMiner stats now display.** Stock-firmware NerdMiner_v2 devices added by
+  BTC address were stuck showing "offline" with zero hashrate, shares, and best
+  difficulty. The solo-pool stats response is now parsed correctly, so hashrate,
+  shares, best difficulty, and last-share time populate as expected.
+
+### New miner support
+
+- **Antminer L7 / L9 (Scrypt)** — monitoring for Bitmain's Scrypt ASICs over the
+  CGMiner API (TCP 4028), alongside the existing SHA-256 Antminer support.
+  Hashrate, board temps, and fan speeds surface natively.
+  *Validated against the CGMiner API shape; verify on first poll — community
+  testing welcome.*
+
+### Improvements
+
+- **Third-party license screen** — review the open-source licenses of the
+  libraries OverManager is built on, from within the app.
+
+### Under the hood
+
+- Internal rebrand from the legacy `com.proofofprints.popmanager` identifier to
+  `com.overbuildlabs.overmanager`. Your saved miners, pools, alerts, preferences,
+  history, and cloud-sync data migrate automatically and safely — **copied, not
+  moved** — on first launch, so there's nothing to reconfigure.
+- The updater signing key and endpoint are unchanged, so existing installs
+  auto-update as usual.
+
 ## v1.7.0
 
 ### New miner support
