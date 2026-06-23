@@ -1,48 +1,247 @@
 # OverManager
 
-Desktop miner-fleet management for Kaspa and Bitcoin, by [OverBuild Labs](https://overbuildlabs.com).
+**Cross-platform miner management software for ASIC and mobile miners**
 
-> **This repository is the public distribution channel for OverManager.**
-> The application is proprietary; its source is not hosted here. Use this repo to
-> **download releases** and **report issues**. Builds are produced from a private
-> source repository and published here automatically.
+Built by [OverBuild Labs](https://overbuildlabs.com) | [Support: support@overbuildlabs.com](mailto:support@overbuildlabs.com)
 
-## Download
+## Overview
 
-Get the latest version from the **[Releases page](https://github.com/overbuildlabs/OverManager/releases/latest)**:
+OverManager is a desktop application for monitoring and managing your cryptocurrency mining operation. Built with Tauri (Rust + React), it runs on Windows, Linux, and macOS without requiring a dedicated mining OS.
 
-| Platform | File |
-|---|---|
-| **Windows** (x64) | `.msi` or `.exe` installer |
-| **macOS** (Apple Silicon / Intel) | `.dmg` |
-| **Linux** (x64) | `.deb` / `.AppImage` / `.rpm` |
+Manage ASIC miners on your local network *and* mobile miners running **OverMobile** *(coming soon)* on Android — all from one unified dashboard. Monitor hashrates, temperatures, battery levels, profitability, and manage pool configurations across your entire fleet.
 
-Installed copies **auto-update** from this repository's releases.
+## Screenshots
 
-### Windows first launch
-OverManager is not yet code-signed. On the SmartScreen prompt, choose
-**More info → Run anyway**. If you enable the mobile miner server, Windows will
-prompt to allow connections on the configured port.
+![Dashboard Overview](docs/screenshots/Dashboard.png)
 
-## What it does
+## Features
 
-Monitor and manage your mining fleet from one dashboard — IceRiver, Whatsminer/MicroBT,
-and Bitmain Antminer ASICs, plus OverMobile devices and OverMiner hardware. Hashrate and
-temperature charts, alerts, bulk pool configuration, and optional cloud sync. Runs on
-Windows, macOS, and Linux.
+### ASIC Miner Management
+- **Multi-manufacturer support:**
+  - **IceRiver** — Full monitoring and control (KS0, KS0 Pro, KS1, KS2, KS3, KS5)
+  - **Whatsminer/MicroBT** — Monitoring support (M50, M56, M60, M66 series)
+  - **Bitmain Antminer** — Read-only monitoring on stock firmware (S17, S19, S21, L7, L9 series)
+  - **Bitaxe/AxeOS, NerdQaxe++** — Monitoring (open-source DIY ASICs)
+  - **NerdMiner_v2** — Monitoring via solo-pool account stats
+- Network scanner with auto-detection of miner manufacturer and subnet
+- Card and data grid views with search, sort, filter by coin/manufacturer/model/pool
+- Per-miner detail pages with hashrate charts, board temps, fan speeds
+- Bulk pool configuration — select multiple miners and apply a pool profile at once
+- Open miner web UI directly from the app
+- Uptime tracking (24h/7d/30d per miner and fleet-wide)
 
-See the [CHANGELOG](CHANGELOG.md) for what's new in each release.
+![Miners Grid View](docs/screenshots/Miner%20Page%20Grid.png)
+![Miners Card View](docs/screenshots/Miner%20Page%20Card.png)
+![Miner Detail](docs/screenshots/Miner%20Detail.png)
 
-## Support
+### OverMobile Management
 
-- **Bugs / feature requests:** [Issues](https://github.com/overbuildlabs/OverManager/issues)
-- **Security:** see [SECURITY.md](SECURITY.md)
-- **Email:** support@overbuildlabs.com
-- **Website:** https://overbuildlabs.com
+OverManager includes an embedded HTTP server that receives push-based telemetry from mobile miners running **OverMobile** *(coming soon)* on Android. Mobile miners pair with a single-use 6-digit pairing code and then report telemetry every 30 seconds over your local network.
+
+- **Dedicated OverMobile screen** with the same card/grid views, search, filters, and sorting as the ASIC page
+- **Real-time telemetry:** hashrate (auto-scaled H/s through GH/s), CPU temperature, thermal throttle state, battery level with charging indicator, accepted/rejected shares, active pool
+- **Remote control panel** — Start, Stop, Restart mining remotely from OverManager
+- **Remote configuration** — push pool URL, wallet, worker, and thread count to any mobile device via queued commands
+- **Command queue with acknowledgement** — commands are delivered on the device's next report cycle; offline devices receive them when they reconnect
+- **Device pairing** — single-use 6-digit pairing code displayed in the app; code rotates automatically after each successful pairing for security
+- **Push to OverMobile** — apply any saved pool profile to selected mobile devices directly from the Pools page
+- **Mobile-specific alerts** — battery low, CPU temperature high, thermal throttle, device offline
+- **Device removal** — queue cleanup commands (stop mining + clear config) before removing a device, with a confirmation prompt explaining the process
+
+![OverMobile Card View](docs/screenshots/Mobile%20Miner%20Card.png)
+![OverMobile Grid View](docs/screenshots/Mobile%20Miner%20Grid.png)
+![OverMobile Remote Control](docs/screenshots/Mobile%20Detail.png)
+
+### Multi-Coin Support
+- Built-in support for **Kaspa (KAS)** and **Bitcoin (BTC)**
+- Modular coin registry — easily add new cryptocurrencies
+- Per-coin profitability calculations using live market data
+
+### Dashboard
+- Farm-level overview with miner counts and hashrates split by type (Total / ASIC / Mobile)
+- Per-coin earnings breakdown with configurable time windows (1h, 6h, 24h, 7d, 30d)
+- Fleet hashrate chart with historical data (1h to 30 days)
+- Fleet uptime percentage (24h rolling)
+- Welcome screen on first launch with quick-start guidance
+- Real-time miner status across your entire operation
+
+### Profitability Tracking
+- Live coin prices via CoinGecko (12+ fiat currencies supported)
+- Electricity cost calculation with per-model wattage
+- Pool fee configuration (per-pool or global default)
+- Selectable time window — view estimated earnings per hour, per day, per week, or per month
+- Daily/monthly gross, power cost, and net profit estimates
+
+### Alerts & Notifications
+
+**ASIC alert rules:**
+- Hashrate drop below threshold
+- Board temperature above threshold
+- Miner offline (consecutive missed polls)
+- No shares submitted within time window
+
+**Mobile alert rules:**
+- Battery level below threshold (when not charging)
+- CPU temperature above threshold
+- Thermal throttle state (moderate/severe/critical)
+- Device offline (consecutive missed reports)
+
+**Notification channels:**
+- Desktop notifications (branded OverManager alerts on Windows)
+- Email alerts via SMTP (SendGrid, Gmail, or any SMTP provider)
+- Alert history with acknowledge/dismiss workflow
+- 5-minute startup grace period prevents false alerts after OverManager restarts
+
+![Alert Desktop Notification](docs/screenshots/Alert%20Desktop%20Notification.png)
+![Alert Page](docs/screenshots/Alert%20Screen.png)
+
+### Pool Management
+- Saved pool profiles with per-pool fee percentages and coin association
+- **Unified miner view** — see both ASIC and mobile miners connected to each pool, with slot indicators (Primary / Backup 1 / Backup 2)
+- **Push to OverMobile** — select mobile devices and queue a pool configuration change directly from the pool detail page
+- Bulk apply pool configurations to ASIC miners
+
+![Pool Detail View](docs/screenshots/Pool%20View.png)
+
+### Data & Export
+- CSV export: miner list, alert history, profitability reports, farm history
+- Uptime tracking (24h/7d/30d per miner and fleet-wide)
+- Historical farm data with auto-pruning (7-day retention)
+- Troubleshooting logs with configurable log levels
+
+### Cloud Sync *(OverCloud — $5/month)*
+- **Remote monitoring** — view your farm from anywhere via the web portal or companion app
+- **Push notifications** — get alerts on your phone when miners go offline, overheat, or stop submitting shares
+- **Remote commands** — start, stop, restart miners and push pool configurations from your phone or browser
+- **Unlimited history** — cloud stores farm data indefinitely (local is limited to 30 days)
+- **Multi-instance** — connect multiple OverManager desktops to one cloud account
+- **Offline-resilient** — data queues locally when connectivity is lost, syncs automatically on reconnect
+
+See [docs/CLOUD_SYNC.md](docs/CLOUD_SYNC.md) for setup guide and [docs/CLOUD_TROUBLESHOOTING.md](docs/CLOUD_TROUBLESHOOTING.md) for troubleshooting.
+
+### Desktop Integration
+- System tray mode — minimize to tray for background monitoring
+- Auto-update support via GitHub Releases (cross-platform: Windows, macOS, Linux)
+- Native Windows notifications
+
+![System Tray Icon](docs/screenshots/Systray%20icon.png)
+
+## OverMobile *(coming soon)*
+
+**OverMobile** is a companion Android app that turns your phone or tablet into a Kaspa miner and reports telemetry back to OverManager over your local network.
+
+- Mine Kaspa (KAS) using your device's CPU
+- Automatic server discovery via pairing code — no manual IP configuration
+- Receives remote commands from OverManager: start, stop, restart, change pool/wallet/threads
+- Reports telemetry every 30 seconds: hashrate, CPU temp, battery, throttle state, pool stats
+- Works offline — queued commands are delivered on reconnect
+
+The app is currently in development. Follow the [GitHub repo](https://github.com/overbuildlabs/OverManager) for release announcements.
+
+## Installation
+
+Download the latest installer for your platform from [Releases](https://github.com/overbuildlabs/OverManager/releases):
+
+| Platform | Format | Notes |
+|---|---|---|
+| **Windows** (x64) | `.msi` installer | Fully tested. See [First Launch on Windows](#first-launch-on-windows). |
+| **macOS** (Apple Silicon) | `.dmg` (aarch64) | Community-tested. |
+| **macOS** (Intel) | `.dmg` (x64) | Community-tested. |
+| **Linux** (x64) | `.deb` or `.AppImage` | Community-tested. Requires `webkit2gtk 4.1` and related system libraries. |
+
+> **Note:** Windows is the primary development and testing platform. macOS and Linux builds are provided and should work, but have not been as extensively tested. Please [open an issue](https://github.com/overbuildlabs/OverManager/issues) if you encounter platform-specific problems.
+
+### Building from Source
+
+Prerequisites:
+- [Node.js](https://nodejs.org/) (v18+)
+- [Rust](https://rustup.rs/) (stable toolchain)
+- [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) (Windows, with C++ workload)
+
+```bash
+git clone https://github.com/overbuildlabs/OverManager.git
+cd OverManager
+npm install
+npm run tauri dev
+```
+
+To create a production build:
+```bash
+npm run tauri build
+```
+
+## Quick Start
+
+### ASIC Miners
+1. **Launch OverManager** and open the **ASIC Miners** tab in the sidebar
+2. Click **Add Device** to open the discovery panel
+3. Click **Scan Network** — OverManager will auto-detect your local subnet and find supported miners
+4. Select the miners you want to monitor and click **Add to Monitored**
+5. Go to **Pools** to create a pool profile with your pool address and wallet
+6. Select miners on the ASIC Miners page and click **Apply Pool Profile** to push the config
+7. Check the **Dashboard** for your farm overview and profitability estimates
+
+### OverMobile
+1. Enable the mobile miner server in **Settings → OverMobile Server**
+2. Open the **OverMobile** tab and click **Add Device** to reveal the server URL and pairing code
+3. In OverMobile, enter the server URL (e.g. `http://192.168.1.50:8787`) and the 6-digit pairing code
+4. Once paired, the device will appear in the OverMobile list and begin reporting telemetry
+5. Use the **Remote Control** panel on any mobile miner's detail page to start, stop, or reconfigure mining
+6. Use the **Push to OverMobile** action on any Pool profile to configure multiple mobile devices at once
+
+## First Launch on Windows
+
+**SmartScreen warning:** Because OverManager v1 is distributed without an Authenticode code-signing certificate, Windows SmartScreen will display an "unrecognized app" warning the first time you run the installer. This is expected. Click **More info** on the warning dialog, then **Run anyway** to proceed. Subsequent launches will not show the warning on the same machine. Code signing is planned for a future release.
+
+**Firewall prompt:** OverManager can run an embedded HTTP server on port 8787 for mobile miner telemetry. The server is **disabled by default** — enable it in **Settings → OverMobile Server** if you plan to use OverMobile. When enabled, Windows Defender Firewall will prompt you to allow OverManager to accept incoming connections on that port.
+
+## Adding New Coins
+
+OverManager is designed to be modular. See [docs/ADD_NEW_COIN.md](docs/ADD_NEW_COIN.md) for instructions on adding support for new cryptocurrencies.
+
+## Supported Miners
+
+See [docs/SUPPORTED_MINERS.md](docs/SUPPORTED_MINERS.md) for the full list of supported miner models and features.
+
+## Configuration
+
+All configuration is stored locally on your machine. On Windows, data is split across two locations:
+
+**App data (`%LOCALAPPDATA%\OverManager\`)** — most operational state:
+- `miners.json` — saved ASIC miners
+- `mobile_miners.json` — registered mobile miners
+- `mobile_miner_commands.json` — pending remote commands
+- `mobile_server_config.json` — mobile server settings + pairing code
+- `alert_rules.json`, `alert_history.json` — alert configuration and history
+- `pool_profiles.json` — pool profiles
+- `coins.json` — configured cryptocurrencies
+- `smtp_config.json` — email notification settings
+
+**User data (`%APPDATA%\com.overbuildlabs.overmanager\`)** — preferences and time-series:
+- `preferences.json` — currency, pool fee, electricity cost, log level, etc.
+- `history.json` — farm hashrate snapshots
+- `uptime.json` — per-miner uptime tracking
+
+To fully back up your OverManager setup, copy both directories. Logs live in `%APPDATA%\com.overbuildlabs.overmanager\logs\overmanager.log`.
+
+> Upgrading from a version prior to v1.8.0: data previously stored under `com.proofofprints.popmanager` is copied automatically to `com.overbuildlabs.overmanager` the first time you launch v1.8.0+. The old directory is left in place and can be removed manually once you've confirmed everything carried over.
+
+On Linux and macOS the layout follows each platform's XDG/Application Support conventions automatically.
+
+## Disclaimer
+
+Profitability estimates are calculated based on current network difficulty, block rewards, coin prices, and configured pool fees. Actual earnings may vary due to pool luck, network difficulty changes, miner uptime, hardware efficiency, and market volatility. These figures are estimates only and should not be considered financial advice.
 
 ## License
 
-OverManager is proprietary software — see [LICENSE](LICENSE). © OverBuild Labs. All rights reserved.
+Proprietary — see [LICENSE](LICENSE) for details. Versions released prior to v1.8.0 remain available under their original MIT License terms. OverManager bundles third-party open-source software; see the in-app Third-Party Licenses screen (Settings → Legal & License Information) or [public/legal/THIRD-PARTY-LICENSES.md](public/legal/THIRD-PARTY-LICENSES.md).
 
-Versions previously distributed under the MIT License remain MIT-licensed for those
-specific versions; the current license governs v1.8.0 and later.
+## Feedback & Testing
+
+Found a bug, or have a miner model that isn't supported yet? Email [support@overbuildlabs.com](mailto:support@overbuildlabs.com) with your miner's make/model and API details, or open an issue if you have GitHub access. See [docs/SUPPORTED_MINERS.md](docs/SUPPORTED_MINERS.md) for what's currently supported.
+
+## Contact
+
+- **Website:** [overbuildlabs.com](https://overbuildlabs.com)
+- **Email:** [support@overbuildlabs.com](mailto:support@overbuildlabs.com)
+- **GitHub:** [github.com/overbuildlabs/OverManager](https://github.com/overbuildlabs/OverManager)
