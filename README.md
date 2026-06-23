@@ -8,7 +8,7 @@ Built by [OverBuild Labs](https://overbuildlabs.com) | [Support: support@overbui
 
 OverManager is a desktop application for monitoring and managing your cryptocurrency mining operation. Built with Tauri (Rust + React), it runs on Windows, Linux, and macOS without requiring a dedicated mining OS.
 
-Manage ASIC miners on your local network *and* mobile miners running **OverMobile** *(coming soon)* on Android — all from one unified dashboard. Monitor hashrates, temperatures, battery levels, profitability, and manage pool configurations across your entire fleet.
+Manage ASIC miners on your local network *and* mobile miners running **OverMobile** on Android — all from one unified dashboard. Monitor hashrates, temperatures, battery levels, profitability, and manage pool configurations across your entire fleet.
 
 ## Screenshots
 
@@ -36,7 +36,7 @@ Manage ASIC miners on your local network *and* mobile miners running **OverMobil
 
 ### OverMobile Management
 
-OverManager includes an embedded HTTP server that receives push-based telemetry from mobile miners running **OverMobile** *(coming soon)* on Android. Mobile miners pair with a single-use 6-digit pairing code and then report telemetry every 30 seconds over your local network.
+OverManager includes an embedded HTTP server that receives push-based telemetry from mobile miners running **OverMobile** on Android. Mobile miners pair with a single-use 6-digit pairing code and then report telemetry every 30 seconds over your local network.
 
 - **Dedicated OverMobile screen** with the same card/grid views, search, filters, and sorting as the ASIC page
 - **Real-time telemetry:** hashrate (auto-scaled H/s through GH/s), CPU temperature, thermal throttle state, battery level with charging indicator, accepted/rejected shares, active pool
@@ -126,7 +126,7 @@ See [docs/CLOUD_SYNC.md](docs/CLOUD_SYNC.md) for setup guide and [docs/CLOUD_TRO
 
 ![System Tray Icon](docs/screenshots/Systray%20icon.png)
 
-## OverMobile *(coming soon)*
+## OverMobile
 
 **OverMobile** is a companion Android app that turns your phone or tablet into a Kaspa miner and reports telemetry back to OverManager over your local network.
 
@@ -136,7 +136,7 @@ See [docs/CLOUD_SYNC.md](docs/CLOUD_SYNC.md) for setup guide and [docs/CLOUD_TRO
 - Reports telemetry every 30 seconds: hashrate, CPU temp, battery, throttle state, pool stats
 - Works offline — queued commands are delivered on reconnect
 
-The app is currently in development. Follow the [GitHub repo](https://github.com/overbuildlabs/OverManager) for release announcements.
+Follow the [GitHub repo](https://github.com/overbuildlabs/OverManager) for updates.
 
 ## Installation
 
@@ -150,25 +150,6 @@ Download the latest installer for your platform from [Releases](https://github.c
 | **Linux** (x64) | `.deb` or `.AppImage` | Community-tested. Requires `webkit2gtk 4.1` and related system libraries. |
 
 > **Note:** Windows is the primary development and testing platform. macOS and Linux builds are provided and should work, but have not been as extensively tested. Please [open an issue](https://github.com/overbuildlabs/OverManager/issues) if you encounter platform-specific problems.
-
-### Building from Source
-
-Prerequisites:
-- [Node.js](https://nodejs.org/) (v18+)
-- [Rust](https://rustup.rs/) (stable toolchain)
-- [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) (Windows, with C++ workload)
-
-```bash
-git clone https://github.com/overbuildlabs/OverManager.git
-cd OverManager
-npm install
-npm run tauri dev
-```
-
-To create a production build:
-```bash
-npm run tauri build
-```
 
 ## Quick Start
 
