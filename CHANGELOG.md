@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.8.3
+
+### NerdMiner improvements
+
+- **Pick your NerdMiner's solo pool from a list.** When you add a stock-firmware
+  NerdMiner_v2 by BTC address, you now choose its pool from a dropdown of
+  supported solo pools instead of typing a host by hand. Each supported pool has
+  its own stats reader, so monitoring works correctly no matter which pool
+  software it runs:
+  - **ckpool-solo** pools — NerdMiners Pool (pool.nerdminers.org) and CKPool
+    Solo (solo.ckpool.org)
+  - **Public Pool** (public-pool.io)
+
+  NerdMiners you added in an earlier version keep working unchanged.
+  *The Public Pool stats reader follows that pool's documented API; verify on
+  first poll — community testing welcome.*
+
 ## v1.8.2
 
 ### Cloud
