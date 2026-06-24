@@ -34,6 +34,13 @@
   dashboard still gets you to that list.
 - The *Total Farm Hashrate* chart's coin selector now defaults to Kaspa and
   remembers your last selection between launches.
+- Hashrate everywhere on the dashboard (Total/ASIC stat cards, *Mining by Coin*
+  cards and rows, the history chart, and the Pool Profiles total) now scales
+  its unit dynamically from H/s up through KH/s, MH/s, GH/s, TH/s and PH/s
+  instead of being fixed to GH/s. A BTC BitAxe or Antminer reading 1.4 TH/s no
+  longer shows as "1400 GH/s", a NerdMiner shows in KH/s, and large farms scale
+  cleanly into PH/s. Totals are normalized across ASIC, mobile and NerdMiner
+  sources so mixed-unit fleets add up correctly.
 
 ### Changed
 

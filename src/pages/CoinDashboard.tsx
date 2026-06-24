@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { getCoinIcon } from "../utils/coinIcon";
+import { scaleHashrate, ghsToHs } from "../utils/hashrate";
 import { useProfitability } from "../context/ProfitabilityContext";
 import { useFarmData } from "../hooks/useFarmData";
 
@@ -80,13 +81,22 @@ export default function CoinDashboard() {
     return currencyCode;
   };
 
+  const scaledHr = scaleHashrate(group?.hashrateHs ?? 0);
+
   const cutoffSecs = Math.floor(Date.now() / 1000) - chartRange * 3600;
-  const chartData = farmHistory
+  // Snapshots store hashrate in GH/s; scale the whole window to one unit from
+  // its peak so e.g. a BTC coin reads in TH/s and a NerdMiner coin in KH/s.
+  const rawPoints = farmHistory
     .filter((s) => s.timestamp > cutoffSecs)
     .map((s) => ({
       time: new Date(s.timestamp * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      hashrate: parseFloat((s.coinData[coinId]?.hashrate ?? 0).toFixed(2)),
+      ghs: s.coinData[coinId]?.hashrate ?? 0,
     }));
+  const chartScale = scaleHashrate(ghsToHs(Math.max(0, ...rawPoints.map((p) => p.ghs))));
+  const chartData = rawPoints.map((p) => ({
+    time: p.time,
+    hashrate: parseFloat((ghsToHs(p.ghs) / chartScale.factor).toFixed(2)),
+  }));
 
   if (!initialLoaded) {
     return (
@@ -181,8 +191,8 @@ export default function CoinDashboard() {
                 <div className="bg-dark-900 rounded-lg p-4">
                   <p className="text-xs text-slate-400 mb-1">Hashrate</p>
                   <p className="text-2xl font-bold text-white">
-                    {group.totalHashrate.toFixed(1)}
-                    <span className="text-sm text-slate-400 ml-1">{group.hashrateUnit}H/s</span>
+                    {scaledHr.value.toFixed(2)}
+                    <span className="text-sm text-slate-400 ml-1">{scaledHr.unit}</span>
                   </p>
                 </div>
                 <div className="bg-dark-900 rounded-lg p-4">
@@ -213,7 +223,7 @@ export default function CoinDashboard() {
               </div>
             ) : (
               <p className="text-xs text-slate-500">
-                {group.totalHashrate > 0 ? "Fetching profitability data..." : "No miners online"}
+                {group.hashrateHs > 0 ? "Fetching profitability data..." : "No miners online"}
               </p>
             )}
           </div>
@@ -270,7 +280,7 @@ export default function CoinDashboard() {
                       fontSize: 12,
                     }}
                     labelStyle={{ color: "#94a3b8" }}
-                    formatter={(v: number) => [`${v} ${group.hashrateUnit}H/s`, "Hashrate"]}
+                    formatter={(v: number) => [`${v} ${chartScale.unit}`, "Hashrate"]}
                   />
                   <Area
                     type="monotone"

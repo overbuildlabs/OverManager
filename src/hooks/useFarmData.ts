@@ -13,6 +13,7 @@ import type {
   NerdMinerInfo,
 } from "../types/miner";
 import { getMinerCoinId } from "../utils/coinLookup";
+import { hashrateUnitToHs } from "../utils/hashrate";
 import { useProfitability } from "../context/ProfitabilityContext";
 
 interface CachedFarmStateResponse {
@@ -38,6 +39,9 @@ export interface CoinGroup {
   offlineCount: number;
   totalHashrate: number;
   hashrateUnit: string;
+  /** Total live hashrate for this coin, normalized to base H/s across ASIC,
+   *  mobile, and NerdMiner sources. Use with formatHashrate() for display. */
+  hashrateHs: number;
   asicCount: number;
   mobileCount: number;
   nerdminerCount: number;
@@ -233,6 +237,13 @@ export function useFarmData() {
   const totalOnline = onlineAsicCount + onlineMobileCount + onlinePopMinerCount;
 
   const asicHashrateGhs = totalRtHashrate;
+  // Normalize each ASIC by its own reported unit (most report "G", but
+  // terahash-class miners report "T") so the farm total is correct regardless
+  // of magnitude — not silently assumed to be GH/s.
+  const asicHashrateHs = miners.reduce(
+    (s, m) => s + m.rtHashrate * hashrateUnitToHs(m.hashrateUnit),
+    0
+  );
   const mobileHashrateHs = mobileMiners
     .filter((m) => m.isOnline)
     .reduce((s, m) => s + m.hashrateHs, 0);
@@ -242,6 +253,7 @@ export function useFarmData() {
     .reduce((s, d) => s + d.hashrate, 0);
   const popMinerHashrateGhs = popMinerHashrateHs / 1e9;
   const totalHashrateGhs = asicHashrateGhs + mobileHashrateGhs + popMinerHashrateGhs;
+  const totalHashrateHs = asicHashrateHs + mobileHashrateHs + popMinerHashrateHs;
   const totalFarmWattage = useMemo(() => {
     return onlineMiners.reduce((sum, { saved }) => sum + (saved?.wattage ?? minerWattage), 0);
   }, [onlineMiners, minerWattage]);
@@ -313,6 +325,15 @@ export function useFarmData() {
 
       const mobileHashrateHsForCoin = mobileGroup.filter((m) => m.isOnline).reduce((s, m) => s + m.hashrateHs, 0);
       const nerdminerHashrateHsForCoin = nerdminerGroup.filter((m) => m.online).reduce((s, m) => s + m.hashrate1mHs, 0);
+      // Normalize the whole group to base H/s (ASIC by its own unit, mobile &
+      // NerdMiner are already H/s) so display can scale the unit dynamically.
+      const asicHashrateHsForCoin = asicGroup.reduce(
+        (s, g) => s + g.info.rtHashrate * hashrateUnitToHs(g.info.hashrateUnit),
+        0
+      );
+      const hashrateHs = asicHashrateHsForCoin + mobileHashrateHsForCoin + nerdminerHashrateHsForCoin;
+
+      // Legacy single-unit total, kept for callers that haven't moved to hashrateHs.
       const unitMultiplier: Record<string, number> = { K: 1e3, M: 1e6, G: 1e9, T: 1e12, P: 1e15 };
       const mobileInUnit = mobileHashrateHsForCoin / (unitMultiplier[hashrateUnit] ?? 1e9);
       const nerdminerInUnit = nerdminerHashrateHsForCoin / (unitMultiplier[hashrateUnit] ?? 1e9);
@@ -331,6 +352,7 @@ export function useFarmData() {
           (nerdminerGroup.length - nerdminerOnline.length),
         totalHashrate,
         hashrateUnit,
+        hashrateHs,
         asicCount: asicGroup.length,
         mobileCount: mobileGroup.length,
         nerdminerCount: nerdminerGroup.length,
@@ -376,11 +398,13 @@ export function useFarmData() {
     onlinePopMinerCount,
     totalOnline,
     asicHashrateGhs,
+    asicHashrateHs,
     mobileHashrateHs,
     mobileHashrateGhs,
     popMinerHashrateHs,
     popMinerHashrateGhs,
     totalHashrateGhs,
+    totalHashrateHs,
     handleManualRefresh,
     electricityCostPerKwh,
     currency,

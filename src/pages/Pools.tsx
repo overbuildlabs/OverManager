@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { PoolProfile, SavedMiner, MinerInfo, CoinConfig, MobileMiner } from "../types/miner";
 import { getCoinIcon } from "../utils/coinIcon";
+import { scaleHashrate, ghsToHs } from "../utils/hashrate";
 import { formatMobileHashrate } from "./MobileMinerList";
 
 type MinerKind = "asic" | "mobile";
@@ -452,11 +453,10 @@ export default function Pools() {
   function getTotalHashrate(profile: PoolProfile): { value: number; unit: string } {
     const miners = getMinersForProfile(profile);
     if (miners.length === 0) return { value: 0, unit: "GH/s" };
-    const total = miners.filter((m) => m.online).reduce((sum, m) => sum + m.hashrateRaw, 0);
-    if (total >= 1000) return { value: total / 1000, unit: "TH/s" };
-    if (total >= 1) return { value: total, unit: "GH/s" };
-    if (total >= 0.001) return { value: total * 1000, unit: "MH/s" };
-    return { value: total * 1e6, unit: "KH/s" };
+    // hashrateRaw is normalized to GH/s; scale dynamically (KH/s → PH/s).
+    const totalGhs = miners.filter((m) => m.online).reduce((sum, m) => sum + m.hashrateRaw, 0);
+    const { value, unit } = scaleHashrate(ghsToHs(totalGhs));
+    return { value, unit };
   }
 
   async function runPushToMobile() {

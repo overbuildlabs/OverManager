@@ -12,6 +12,7 @@ import {
 import { getCoinIcon } from "../utils/coinIcon";
 import { useProfitability } from "../context/ProfitabilityContext";
 import { useFarmData } from "../hooks/useFarmData";
+import { scaleHashrate, ghsToHs } from "../utils/hashrate";
 import { formatMobileHashrate } from "./MobileMinerList";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
@@ -71,11 +72,10 @@ export default function Dashboard() {
     onlineMobileCount,
     onlinePopMinerCount,
     totalOnline,
-    asicHashrateGhs,
+    asicHashrateHs,
     mobileHashrateHs,
     popMinerHashrateHs,
-    totalHashrateGhs,
-    unit,
+    totalHashrateHs,
     handleManualRefresh,
     electricityCostPerKwh,
   } = useFarmData();
@@ -270,13 +270,13 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
         <StatCard
           label="Total Hashrate"
-          value={totalHashrateGhs.toFixed(1)}
-          unit={`${unit}H/s`}
+          value={scaleHashrate(totalHashrateHs).value.toFixed(2)}
+          unit={scaleHashrate(totalHashrateHs).unit}
         />
         <StatCard
           label="ASIC Hashrate"
-          value={asicHashrateGhs.toFixed(1)}
-          unit={`${unit}H/s`}
+          value={scaleHashrate(asicHashrateHs).value.toFixed(2)}
+          unit={scaleHashrate(asicHashrateHs).unit}
         />
         <StatCard
           label="Mobile Hashrate"
@@ -380,11 +380,18 @@ export default function Dashboard() {
       {farmHistory.length > 1 && (() => {
         const cutoffSecs = Math.floor(Date.now() / 1000) - chartRange * 3600;
         const filtered = farmHistory.filter((s) => s.timestamp > cutoffSecs);
-        const chartData = filtered.map((s) => ({
+        // Snapshots store hashrate in GH/s. Pick one display unit for the whole
+        // window from its peak value, then scale every point to it, so a BTC
+        // farm shows TH/s and a NerdMiner-only coin shows KH/s — not raw GH/s.
+        const rawPoints = filtered.map((s) => ({
           time: new Date(s.timestamp * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          hashrate: parseFloat(
-            (chartCoinId === "total" ? s.totalHashrate : s.coinData[chartCoinId]?.hashrate ?? 0).toFixed(2)
-          ),
+          ghs: chartCoinId === "total" ? s.totalHashrate : s.coinData[chartCoinId]?.hashrate ?? 0,
+        }));
+        const peakHs = ghsToHs(Math.max(0, ...rawPoints.map((p) => p.ghs)));
+        const chartScale = scaleHashrate(peakHs);
+        const chartData = rawPoints.map((p) => ({
+          time: p.time,
+          hashrate: parseFloat((ghsToHs(p.ghs) / chartScale.factor).toFixed(2)),
         }));
         const chartCoin = coinGroups.find((g) => g.coinId === chartCoinId);
         const chartTicker = chartCoinId === "total" ? null : chartCoin?.coin?.ticker ?? chartCoinId.toUpperCase();
@@ -458,7 +465,7 @@ export default function Dashboard() {
                     fontSize: 12,
                   }}
                   labelStyle={{ color: "#94a3b8" }}
-                  formatter={(v: number) => [`${v} GH/s`, "Hashrate"]}
+                  formatter={(v: number) => [`${v} ${chartScale.unit}`, "Hashrate"]}
                 />
                 <Area
                   type="monotone"
@@ -545,8 +552,9 @@ export default function Dashboard() {
           {coinViewMode === "card" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {coinGroups.map(
-                ({ coinId, coin, count, offlineCount, totalHashrate, hashrateUnit, asicCount, mobileCount, nerdminerCount }) => {
+                ({ coinId, coin, count, offlineCount, hashrateHs, asicCount, mobileCount, nerdminerCount }) => {
                   const color = coin?.color ?? "#6366f1";
+                  const scaledHr = scaleHashrate(hashrateHs);
                   const displayName = coin ? `${coin.name} (${coin.ticker})` : coinId;
                   const earnings = coinEarnings[coinId];
                   const ticker = coin?.ticker ?? coinId.toUpperCase();
@@ -621,8 +629,8 @@ export default function Dashboard() {
                       <div className="grid grid-cols-2 gap-3 mt-3">
                         <div className="bg-dark-900 rounded-lg p-3">
                           <p className="text-xs text-slate-400 mb-1">Hashrate</p>
-                          <p className="text-xl font-bold text-white">{totalHashrate.toFixed(1)}</p>
-                          <p className="text-xs text-slate-500">{hashrateUnit}H/s</p>
+                          <p className="text-xl font-bold text-white">{scaledHr.value.toFixed(2)}</p>
+                          <p className="text-xs text-slate-500">{scaledHr.unit}</p>
                         </div>
                         <div className="bg-dark-900 rounded-lg p-3">
                           <p className="text-xs text-slate-400 mb-1">Price</p>
@@ -677,10 +685,10 @@ export default function Dashboard() {
                       count,
                       onlineCount,
                       offlineCount,
-                      totalHashrate,
-                      hashrateUnit,
+                      hashrateHs,
                     }) => {
                       const color = coin?.color ?? "#6366f1";
+                      const scaledHr = scaleHashrate(hashrateHs);
                       const displayName = coin ? `${coin.name} (${coin.ticker})` : coinId;
                       const earnings = coinEarnings[coinId];
                       const ticker = coin?.ticker ?? coinId.toUpperCase();
@@ -715,8 +723,8 @@ export default function Dashboard() {
                             </span>
                           </td>
                           <td className="px-5 py-3 text-right text-white">
-                            {totalHashrate.toFixed(1)}{" "}
-                            <span className="text-xs text-slate-500">{hashrateUnit}H/s</span>
+                            {scaledHr.value.toFixed(2)}{" "}
+                            <span className="text-xs text-slate-500">{scaledHr.unit}</span>
                           </td>
                           <td className="px-5 py-3 text-right">
                             {earnings ? (
