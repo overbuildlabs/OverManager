@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import type { NerdMinerInfo, SavedNerdMiner, CoinConfig } from "../types/miner";
+import type { NerdMinerInfo, SavedNerdMiner } from "../types/miner";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -36,11 +36,9 @@ function PickaxeIcon({ className }: { className?: string }) {
 // ─── Add panel ────────────────────────────────────────────────────────────────
 
 function AddNerdMinerPanel({
-  coins,
   onClose,
   onAdded,
 }: {
-  coins: CoinConfig[];
   onClose: () => void;
   onAdded: () => void;
 }) {
@@ -48,7 +46,6 @@ function AddNerdMinerPanel({
   const [label, setLabel] = useState("");
   const [worker, setWorker] = useState("");
   const [poolHost, setPoolHost] = useState("");
-  const [coinId, setCoinId] = useState("bitcoin");
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,7 +60,6 @@ function AddNerdMinerPanel({
         label: label.trim() || null,
         worker: worker.trim() || null,
         poolHost: poolHost.trim() || null,
-        coinId,
       });
       setAddress("");
       setLabel("");
@@ -148,20 +144,6 @@ function AddNerdMinerPanel({
             placeholder="pool.nerdminers.org"
           />
         </div>
-        <div className="min-w-[140px]">
-          <label className="block text-xs font-medium text-slate-400 mb-1">Coin</label>
-          <select
-            value={coinId}
-            onChange={(e) => setCoinId(e.target.value)}
-            className="w-full bg-dark-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary-500"
-          >
-            {coins.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.ticker}
-              </option>
-            ))}
-          </select>
-        </div>
         <button
           onClick={handleAdd}
           disabled={adding || !address.trim()}
@@ -180,15 +162,11 @@ function AddNerdMinerPanel({
 function NerdMinerCard({
   saved,
   info,
-  coins,
   onRemove,
-  onCoinChange,
 }: {
   saved: SavedNerdMiner;
   info: NerdMinerInfo | undefined;
-  coins: CoinConfig[];
   onRemove: () => void;
-  onCoinChange: (coinId: string) => void;
 }) {
   const online = info?.online ?? false;
   const statusColor = online ? "bg-emerald-500" : "bg-slate-500";
@@ -207,17 +185,6 @@ function NerdMinerCard({
             {saved.pool_host}
             {saved.worker ? ` · ${saved.worker}` : ""}
           </p>
-          <select
-            value={saved.coin_id}
-            onChange={(e) => onCoinChange(e.target.value)}
-            className="mt-2 bg-dark-900 border border-slate-600 rounded-md px-2 py-1 text-xs text-white focus:outline-none focus:border-primary-500"
-          >
-            {coins.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.ticker}
-              </option>
-            ))}
-          </select>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-white ${statusColor}`}>
@@ -273,14 +240,9 @@ function NerdMinerCard({
 export default function NerdMinerList() {
   const [saved, setSaved] = useState<SavedNerdMiner[]>([]);
   const [infos, setInfos] = useState<Map<string, NerdMinerInfo>>(new Map());
-  const [coins, setCoins] = useState<CoinConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddPanel, setShowAddPanel] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<SavedNerdMiner | null>(null);
-
-  useEffect(() => {
-    invoke<CoinConfig[]>("get_coins").then(setCoins).catch(console.error);
-  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -318,15 +280,6 @@ export default function NerdMinerList() {
     }
   }
 
-  async function handleCoinChange(id: string, coinId: string) {
-    try {
-      await invoke("update_nerdminer_coin", { id, coinId });
-      await refresh();
-    } catch (err) {
-      console.error("Failed to update NerdMiner coin:", err);
-    }
-  }
-
   return (
     <div className="p-8">
       <div className="mb-6 flex items-end justify-between">
@@ -350,7 +303,6 @@ export default function NerdMinerList() {
 
       {showAddPanel && (
         <AddNerdMinerPanel
-          coins={coins}
           onClose={() => setShowAddPanel(false)}
           onAdded={() => { setShowAddPanel(false); refresh(); }}
         />
@@ -374,9 +326,7 @@ export default function NerdMinerList() {
               key={s.id}
               saved={s}
               info={infos.get(s.id)}
-              coins={coins}
               onRemove={() => setRemoveTarget(s)}
-              onCoinChange={(coinId) => handleCoinChange(s.id, coinId)}
             />
           ))}
         </div>

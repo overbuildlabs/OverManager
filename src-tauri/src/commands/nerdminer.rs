@@ -137,10 +137,37 @@ pub async fn fetch_nerdminer_info(saved: &SavedNerdMiner) -> NerdMinerInfo {
         }
     };
 
-    let stats: CkpoolUserStats = match resp.json().await {
+    let status = resp.status();
+    let body = match resp.text().await {
+        Ok(b) => b,
+        Err(e) => {
+            log::warn!("NerdMiner: failed to read pool response body for {}: {}", saved.address, e);
+            info.error = Some(format!("Failed to read pool response: {e}"));
+            return info;
+        }
+    };
+
+    if !status.is_success() {
+        let snippet: String = body.chars().take(200).collect();
+        log::warn!(
+            "NerdMiner: pool returned HTTP {} for {}: {}",
+            status, saved.address, snippet
+        );
+        info.error = Some(format!("Pool returned HTTP {status}"));
+        return info;
+    }
+
+    let stats: CkpoolUserStats = match serde_json::from_str(&body) {
         Ok(s) => s,
         Err(e) => {
-            log::warn!("NerdMiner: failed to parse pool stats for {}: {}", saved.address, e);
+            // Log a snippet of the raw body — the pool's response shape is
+            // documented community knowledge, not yet verified live, so this
+            // is the diagnostic we need if a deployment's JSON differs.
+            let snippet: String = body.chars().take(200).collect();
+            log::warn!(
+                "NerdMiner: failed to parse pool stats for {}: {}. Raw response: {}",
+                saved.address, e, snippet
+            );
             info.error = Some(format!("Failed to parse pool stats: {e}"));
             return info;
         }
