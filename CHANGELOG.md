@@ -1,5 +1,28 @@
 # Changelog
 
+## v1.8.1
+
+### Fixes
+
+- **Mining by Coin** now includes NerdMiner hashrate — previously the poller
+  never read the NerdMiner cache when building the per-coin snapshot, so BTC
+  solo-mined by NerdMiners was invisible in the coin breakdown and historical
+  charts.
+- Adding an Antminer L7/L9 (or any ASIC) no longer silently hardcodes its
+  `coinId` to `kaspa`; mistagged miners can now also be corrected after the
+  fact.
+- NerdMiner pool-stats polling now logs the HTTP status and a snippet of the
+  raw response body when it can't parse the pool's stats — a "failed to parse
+  pool stats: error decoding response body" warning with no further detail
+  was undiagnosable.
+
+### Changed
+
+- Removed the per-NerdMiner coin selector added during the coin-split work —
+  NerdMiner_v2 stock firmware only solo-mines BTC, so the dropdown was dead
+  weight. The underlying `coinId` field is still there for a future
+  firmware/pool variant, it's just not user-facing on NerdMiners anymore.
+
 ## v1.8.0
 
 ### Licensing
