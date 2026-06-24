@@ -1,6 +1,6 @@
 [package]
 name = "pop-manager"
-version = "1.8.1"
+version = "1.8.3"
 description = "OverManager - ASIC and mobile miner management by OverBuild Labs"
 authors = ["OverBuild Labs"]
 license-file = "../LICENSE"

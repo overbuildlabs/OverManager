@@ -74,12 +74,16 @@ struct CkpoolUserStats {
     hashrate5m: String,
     #[serde(default)]
     hashrate1hr: String,
+    // ckpool-solo serves these counters as JSON numbers, but its deployments
+    // are inconsistent about integer vs. float form (e.g. `shares` comes back
+    // as `2320022.0`). Decode them all as f64 and narrow on assignment so a
+    // float value doesn't blow up the whole parse.
     #[serde(default)]
-    lastshare: i64,
+    lastshare: f64,
     #[serde(default)]
-    workers: u32,
+    workers: f64,
     #[serde(default)]
-    shares: u64,
+    shares: f64,
     #[serde(default)]
     bestshare: f64,
     #[serde(default)]
@@ -176,15 +180,15 @@ pub async fn fetch_nerdminer_info(saved: &SavedNerdMiner) -> NerdMinerInfo {
     info.hashrate_1m_hs = parse_ckpool_hashrate(&stats.hashrate1m);
     info.hashrate_5m_hs = parse_ckpool_hashrate(&stats.hashrate5m);
     info.hashrate_1hr_hs = parse_ckpool_hashrate(&stats.hashrate1hr);
-    info.workers = stats.workers;
-    info.shares = stats.shares;
+    info.workers = stats.workers as u32;
+    info.shares = stats.shares as u64;
     info.best_share_diff = stats.bestshare;
     info.best_ever_diff = stats.bestever;
-    info.last_share_unix = stats.lastshare;
+    info.last_share_unix = stats.lastshare as i64;
     // Online = a share came in within the last 10 minutes (ckpool last-share is
     // epoch-seconds). NerdMiner's diff is so low shares usually land every
     // few minutes when actually mining.
-    info.online = stats.lastshare > 0 && (Utc::now().timestamp() - stats.lastshare) < 600;
+    info.online = info.last_share_unix > 0 && (Utc::now().timestamp() - info.last_share_unix) < 600;
 
     log::info!(
         "NerdMiner {}: 1m={:.0} H/s workers={} shares={} bestShare={:.0}",

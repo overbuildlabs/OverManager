@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.8.1
+## v1.8.3
 
 ### Fixes
 
@@ -11,10 +11,21 @@
 - Adding an Antminer L7/L9 (or any ASIC) no longer silently hardcodes its
   `coinId` to `kaspa`; mistagged miners can now also be corrected after the
   fact.
-- NerdMiner pool-stats polling now logs the HTTP status and a snippet of the
-  raw response body when it can't parse the pool's stats — a "failed to parse
-  pool stats: error decoding response body" warning with no further detail
-  was undiagnosable.
+- NerdMiner pool-stats polling no longer fails to parse a solo pool's response
+  when the pool serves share/worker counters as floating-point numbers (e.g.
+  `shares: 2320022.0`) instead of integers. The poller now also logs the HTTP
+  status and a snippet of the raw response body when a parse does fail, so any
+  remaining deployment quirks are diagnosable.
+
+### New
+
+- **Per-coin dashboards** — clicking a card or row in *Mining by Coin* now
+  opens a dedicated dashboard for that coin (miner breakdown, coin-scoped
+  profitability, and a per-coin hashrate history chart) instead of jumping
+  straight to the filtered ASIC list. A "View ASIC miners" link on each coin
+  dashboard still gets you to that list.
+- The *Total Farm Hashrate* chart's coin selector now defaults to Kaspa and
+  remembers your last selection between launches.
 
 ### Changed
 
