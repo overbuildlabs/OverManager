@@ -388,6 +388,9 @@ export default function Dashboard() {
         }));
         const chartCoin = coinGroups.find((g) => g.coinId === chartCoinId);
         const chartTicker = chartCoinId === "total" ? null : chartCoin?.coin?.ticker ?? chartCoinId.toUpperCase();
+        // Tint the chart with the selected coin's brand color; keep the default
+        // indigo for the all-coins "Total" view.
+        const chartColor = chartCoinId === "total" ? "#6366f1" : chartCoin?.coin?.color ?? "#6366f1";
         return (
           <div className="mb-6 bg-dark-800 rounded-xl border border-slate-700/50 p-5">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
@@ -428,8 +431,8 @@ export default function Dashboard() {
               <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="hashGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                    <stop offset="5%" stopColor={chartColor} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <XAxis
@@ -460,7 +463,7 @@ export default function Dashboard() {
                 <Area
                   type="monotone"
                   dataKey="hashrate"
-                  stroke="#6366f1"
+                  stroke={chartColor}
                   strokeWidth={2}
                   fill="url(#hashGrad)"
                   dot={false}
