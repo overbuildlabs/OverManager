@@ -507,7 +507,7 @@ async fn build_and_persist_snapshot(
     // staging in history::add_farm_snapshot, but for the /ingest/miners
     // endpoint which populates the cloud `miner_states` table (drives the web
     // Dashboard's "Total Miners" tile).
-    stage_miners_for_cloud(app, &asic, &saved_miners, &mobile_miners, &popminer_devices);
+    stage_miners_for_cloud(app, &asic, &saved_miners, &mobile_miners, &popminer_devices, &nerdminers);
 
     {
         let mut slot = cache.farm_snapshot.lock().unwrap();
@@ -518,8 +518,8 @@ async fn build_and_persist_snapshot(
     let _ = app.emit("farm-state-updated", ());
 }
 
-/// Convert local ASIC / mobile / PoPMiner records into the shape the
-/// `/api/v1/ingest/miners` endpoint expects, stage it on `CloudState`, and
+/// Convert local ASIC / mobile / PoPMiner / NerdMiner records into the shape
+/// the `/api/v1/ingest/miners` endpoint expects, stage it on `CloudState`, and
 /// enqueue a fallback copy so the next sync cycle picks it up. Mirrors the
 /// snapshot wiring in `commands::history::add_farm_snapshot`.
 fn stage_miners_for_cloud(
@@ -528,6 +528,7 @@ fn stage_miners_for_cloud(
     saved_miners: &[SavedMiner],
     mobile_miners: &[crate::commands::mobile_miner::MobileMiner],
     popminer_devices: &[crate::popminer_device::PopMinerDevice],
+    nerdminers: &[crate::commands::nerdminer::NerdMinerInfo],
 ) {
     use tauri::Manager;
 
@@ -640,6 +641,29 @@ fn stage_miners_for_cloud(
                 "accepted": d.accepted,
                 "rejected": d.rejected,
                 "mining": d.mining,
+            }
+        }));
+    }
+
+    // NerdMiners — minerId keyed on the solo-pool BTC address, same key the
+    // local coin_data aggregation above uses to identify a unit.
+    for nm in nerdminers {
+        miners_json.push(serde_json::json!({
+            "minerType": "nerdminer",
+            "minerId": nm.address,
+            "label": (!nm.label.is_empty()).then(|| nm.label.clone()),
+            "coin": (!nm.coin_id.is_empty()).then(|| nm.coin_id.clone()),
+            "online": nm.online,
+            "hashrate": nm.hashrate_1m_hs,
+            "state": {
+                "poolHost": nm.pool_host,
+                "hashrate5mHs": nm.hashrate_5m_hs,
+                "hashrate1hrHs": nm.hashrate_1hr_hs,
+                "workers": nm.workers,
+                "shares": nm.shares,
+                "bestShareDiff": nm.best_share_diff,
+                "bestEverDiff": nm.best_ever_diff,
+                "lastShareUnix": nm.last_share_unix,
             }
         }));
     }
