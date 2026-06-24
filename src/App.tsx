@@ -12,6 +12,7 @@ import MobileMinerList from "./pages/MobileMinerList";
 import MobileMinerDetail from "./pages/MobileMinerDetail";
 import PopMinerList from "./pages/PopMinerList";
 import NerdMinerList from "./pages/NerdMinerList";
+import CoinDashboard from "./pages/CoinDashboard";
 import Licenses from "./pages/Licenses";
 import { ProfitabilityProvider } from "./context/ProfitabilityContext";
 import { AlertProvider } from "./context/AlertContext";
@@ -55,6 +56,7 @@ function App() {
               <main className="flex-1 overflow-auto">
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
+                  <Route path="/coin/:coinId" element={<CoinDashboard />} />
                   <Route path="/miners" element={<MinerList />} />
                   <Route path="/mobile-miners" element={<MobileMinerList />} />
                   <Route path="/mobile-miners/:deviceId" element={<MobileMinerDetail />} />

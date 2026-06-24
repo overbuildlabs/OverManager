@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import {
   AreaChart,
   Area,
@@ -10,51 +9,18 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import type { MinerInfo, SavedMiner, CoinEarnings, CoinConfig, FarmSnapshot, UptimeStats, MobileMiner, PopMinerDevice, NerdMinerInfo } from "../types/miner";
-import { getMinerCoinId } from "../utils/coinLookup";
 import { getCoinIcon } from "../utils/coinIcon";
 import { useProfitability } from "../context/ProfitabilityContext";
+import { useFarmData } from "../hooks/useFarmData";
 import { formatMobileHashrate } from "./MobileMinerList";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
-
-interface CachedFarmStateResponse {
-  asicMiners: MinerInfo[];
-  mobileMiners: MobileMiner[];
-  popminerDevices: PopMinerDevice[];
-  nerdminers: NerdMinerInfo[];
-  farmSnapshot: FarmSnapshot | null;
-  lastAsicPollMs: number;
-  lastSnapshotMs: number;
-}
 
 const STALE_THRESHOLD_MS = 15 * 60 * 1000;
 
 type CoinViewMode = "card" | "list";
 
-interface MinerWithSaved {
-  info: MinerInfo;
-  saved: SavedMiner | undefined;
-}
-
-interface CoinGroup {
-  coinId: string;
-  coin: CoinConfig | undefined;
-  count: number;
-  onlineCount: number;
-  offlineCount: number;
-  totalHashrate: number;
-  hashrateUnit: string;
-  asicCount: number;
-  mobileCount: number;
-  nerdminerCount: number;
-}
-
-const COIN_TICKER_TO_ID: Record<string, string> = { KAS: "kaspa", BTC: "bitcoin" };
-function coinIdFromTicker(ticker: string): string {
-  if (!ticker) return "kaspa";
-  return COIN_TICKER_TO_ID[ticker.toUpperCase()] ?? ticker.toLowerCase();
-}
+const DEFAULT_CHART_COIN = "kaspa";
 
 type ProfitRange = 1 | 6 | 24 | 168 | 720;
 type ChartRange = 1 | 6 | 24 | 168 | 720;
@@ -84,320 +50,49 @@ function StatCard({
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { currency, poolFeePercent, electricityCostPerKwh, minerWattage, poolProfiles } = useProfitability();
+  const { currency } = useProfitability();
   const currencyCode = currency.toUpperCase();
-  const [minerData, setMinerData] = useState<MinerWithSaved[]>([]);
-  const [mobileMiners, setMobileMiners] = useState<MobileMiner[]>([]);
-  const [popMinerDevices, setPopMinerDevices] = useState<PopMinerDevice[]>([]);
-  const [nerdMiners, setNerdMiners] = useState<NerdMinerInfo[]>([]);
-  const [savedMiners, setSavedMiners] = useState<SavedMiner[]>([]);
-  const [coins, setCoins] = useState<CoinConfig[]>([]);
-  const [lastPollMs, setLastPollMs] = useState<number>(0);
-  const [refreshing, setRefreshing] = useState(false);
-  const [initialLoaded, setInitialLoaded] = useState(false);
-  const [coinEarnings, setCoinEarnings] = useState<Record<string, CoinEarnings>>({});
+  const {
+    savedMiners,
+    lastPollMs,
+    refreshing,
+    initialLoaded,
+    coinEarnings,
+    farmHistory,
+    fleetUptime,
+    coinGroups,
+    totalFarmWattage,
+    totalRtHashrate,
+    asicCount,
+    mobileCount,
+    popMinerCount,
+    totalCount,
+    onlineAsicCount,
+    onlineMobileCount,
+    onlinePopMinerCount,
+    totalOnline,
+    asicHashrateGhs,
+    mobileHashrateHs,
+    popMinerHashrateHs,
+    totalHashrateGhs,
+    unit,
+    handleManualRefresh,
+    electricityCostPerKwh,
+  } = useFarmData();
   const [coinViewMode, setCoinViewMode] = useState<CoinViewMode>(() => {
     const saved = localStorage.getItem("dashboard-coin-view");
     return saved === "list" ? "list" : "card";
   });
-  const [farmHistory, setFarmHistory] = useState<FarmSnapshot[]>([]);
   const [chartRange, setChartRange] = useState<ChartRange>(24);
-  const [chartCoinId, setChartCoinId] = useState<string>("total");
+  const [chartCoinId, setChartCoinId] = useState<string>(() => {
+    return localStorage.getItem("dashboard-chart-coin") || DEFAULT_CHART_COIN;
+  });
   const [profitRange, setProfitRange] = useState<ProfitRange>(24);
-  const [fleetUptime, setFleetUptime] = useState<number | null>(null);
 
-  function getPoolFeeForMiner(info: MinerInfo): number {
-    const activePool = info.pools.find((p) => p.connect || p.state === 1);
-    if (activePool && activePool.addr) {
-      for (const profile of poolProfiles) {
-        if (
-          profile.pool1addr === activePool.addr ||
-          profile.pool2addr === activePool.addr ||
-          profile.pool3addr === activePool.addr
-        ) {
-          return profile.fee_percent ?? poolFeePercent;
-        }
-      }
-    }
-    return poolFeePercent;
+  function handleChartCoinChange(coinId: string) {
+    setChartCoinId(coinId);
+    localStorage.setItem("dashboard-chart-coin", coinId);
   }
-
-  const loadFromCache = useCallback(
-    async (saved: SavedMiner[]) => {
-      try {
-        const cached = await invoke<CachedFarmStateResponse>("get_cached_farm_state");
-
-        // Join ASIC miners with saved entries to preserve the MinerWithSaved
-        // shape used by the rest of the file. Any saved miner missing from the
-        // cache (poller hasn't fetched it yet) gets an offline placeholder.
-        const byIp = new Map(cached.asicMiners.map((m) => [m.ip, m]));
-        const data: MinerWithSaved[] = saved.map((s) => {
-          const info = byIp.get(s.ip);
-          if (info) return { info, saved: s };
-          return {
-            info: {
-              ip: s.ip,
-              hostname: s.label,
-              mac: "",
-              model: "Unknown",
-              status: "offline",
-              firmware: "",
-              software: "",
-              online: false,
-              rtHashrate: 0,
-              avgHashrate: 0,
-              hashrateUnit: "G",
-              runtime: "--",
-              runtimeSecs: 0,
-              fans: [],
-              boards: [],
-              pools: [],
-              hashrateHistory: [],
-              health: { power: false, network: false, fan: false, temp: false },
-              lastSeen: new Date().toISOString(),
-              defaultWattage: s.wattage ?? 100,
-            },
-            saved: s,
-          };
-        });
-
-        setMinerData(data);
-        setMobileMiners(cached.mobileMiners);
-        setPopMinerDevices(cached.popminerDevices);
-        setNerdMiners(cached.nerdminers ?? []);
-        setLastPollMs(cached.lastAsicPollMs);
-      } catch (err) {
-        console.error("Failed to load cached farm state:", err);
-      }
-
-      // Fetch fleet uptime stats (cheap; recomputed from uptime.json by Rust)
-      invoke<Record<string, UptimeStats>>("get_all_uptime_stats", { hours: 24 })
-        .then((stats) => {
-          const values = Object.values(stats);
-          if (values.length > 0) {
-            const avg = values.reduce((s, v) => s + v.uptime_percent, 0) / values.length;
-            setFleetUptime(avg);
-          }
-        })
-        .catch(console.error);
-
-      // Refresh history chart on each event — new snapshots may have been added.
-      invoke<FarmSnapshot[]>("get_farm_history", { hours: 720 })
-        .then(setFarmHistory)
-        .catch(console.error);
-    },
-    []
-  );
-
-  const fetchCoinEarnings = useCallback((groups: CoinGroup[], allMinerData: MinerWithSaved[]) => {
-    groups.forEach(({ coinId, totalHashrate }) => {
-      if (totalHashrate <= 0) return;
-      const coinMiners = allMinerData.filter((d) => {
-        if (!d.info.online) return false;
-        const activePoolAddr = d.info.pools.find((p) => p.connect || p.state === 1)?.addr;
-        return getMinerCoinId(activePoolAddr, poolProfiles, d.saved?.coin_id) === coinId;
-      });
-      let weightedFee = poolFeePercent;
-      if (coinMiners.length > 0) {
-        const totalH = coinMiners.reduce((s, d) => s + d.info.rtHashrate, 0);
-        if (totalH > 0) {
-          weightedFee = coinMiners.reduce((s, d) => {
-            const fee = getPoolFeeForMiner(d.info);
-            return s + fee * (d.info.rtHashrate / totalH);
-          }, 0);
-        }
-      }
-      invoke<CoinEarnings>("calculate_coin_earnings", {
-        coinId,
-        hashrateGhs: totalHashrate,
-        poolFeePercent: weightedFee,
-        currency,
-      })
-        .then((est) => setCoinEarnings((prev) => ({ ...prev, [coinId]: est })))
-        .catch(console.error);
-    });
-  }, [poolFeePercent, currency, poolProfiles]);
-
-  // Initial mount: hydrate saved miners + cached state, then render.
-  useEffect(() => {
-    invoke<SavedMiner[]>("get_saved_miners")
-      .then(async (saved) => {
-        setSavedMiners(saved);
-        await loadFromCache(saved);
-        setInitialLoaded(true);
-      })
-      .catch(() => setInitialLoaded(true));
-    invoke<CoinConfig[]>("get_coins").then(setCoins).catch(console.error);
-  }, [loadFromCache]);
-
-  // Subscribe to background poller events. Resubscribes when the saved list
-  // changes (e.g. after Add Device) so the listener closes over the latest
-  // saved miners.
-  useEffect(() => {
-    let unlisten: (() => void) | null = null;
-    let cancelled = false;
-    listen("farm-state-updated", () => {
-      loadFromCache(savedMiners).catch(console.error);
-    }).then((h) => {
-      if (cancelled) h();
-      else unlisten = h;
-    });
-    return () => {
-      cancelled = true;
-      if (unlisten) unlisten();
-    };
-  }, [savedMiners, loadFromCache]);
-
-  async function handleManualRefresh() {
-    setRefreshing(true);
-    try {
-      await invoke("force_poll_asic");
-      // Poller emits "farm-state-updated" when the cycle completes; keep the
-      // spinner up briefly so the click feels responsive even if the network
-      // poll is fast.
-      await new Promise((resolve) => setTimeout(resolve, 400));
-    } catch (err) {
-      console.error("Force poll failed:", err);
-    } finally {
-      setRefreshing(false);
-    }
-  }
-
-  const miners = minerData.map((d) => d.info);
-  const onlineMiners = minerData.filter((d) => d.info.online);
-  const totalRtHashrate = miners.reduce((s, m) => s + m.rtHashrate, 0);
-  const onlineCount = miners.filter((m) => m.online).length;
-  const unit = miners.find((m) => m.online)?.hashrateUnit ?? "G";
-
-  // Miner counts by type
-  const asicCount = miners.length;
-  const mobileCount = mobileMiners.length;
-  const popMinerCount = popMinerDevices.length;
-  const totalCount = asicCount + mobileCount + popMinerCount;
-  const onlineAsicCount = onlineCount;
-  const onlineMobileCount = mobileMiners.filter((m) => m.isOnline).length;
-  const onlinePopMinerCount = popMinerDevices.filter((d) => d.online).length;
-  const totalOnline = onlineAsicCount + onlineMobileCount + onlinePopMinerCount;
-
-  // Hashrate by type
-  const asicHashrateGhs = totalRtHashrate;
-  const mobileHashrateHs = mobileMiners
-    .filter((m) => m.isOnline)
-    .reduce((s, m) => s + m.hashrateHs, 0);
-  const mobileHashrateGhs = mobileHashrateHs / 1e9;
-  const popMinerHashrateHs = popMinerDevices
-    .filter((d) => d.online)
-    .reduce((s, d) => s + d.hashrate, 0);
-  const popMinerHashrateGhs = popMinerHashrateHs / 1e9;
-  const totalHashrateGhs = asicHashrateGhs + mobileHashrateGhs + popMinerHashrateGhs;
-  const totalFarmWattage = useMemo(() => {
-    return onlineMiners.reduce((sum, { saved }) => sum + (saved?.wattage ?? minerWattage), 0);
-  }, [onlineMiners, minerWattage]);
-
-  const coinGroups = useMemo<CoinGroup[]>(() => {
-    // Track ASIC miners per coin
-    const asicByCoin = new Map<string, MinerWithSaved[]>();
-    for (const saved of savedMiners) {
-      const live = minerData.find((d) => d.info.ip === saved.ip);
-      const activePoolAddr = live?.info.pools.find((p) => p.connect || p.state === 1)?.addr;
-      const coinId = getMinerCoinId(activePoolAddr, poolProfiles, saved.coin_id);
-      if (!asicByCoin.has(coinId)) asicByCoin.set(coinId, []);
-      asicByCoin.get(coinId)!.push(
-        live ?? {
-          info: {
-            ip: saved.ip,
-            hostname: saved.label,
-            mac: "",
-            model: "Unknown",
-            status: "offline",
-            firmware: "",
-            software: "",
-            online: false,
-            rtHashrate: 0,
-            avgHashrate: 0,
-            hashrateUnit: "G",
-            runtime: "--",
-            runtimeSecs: 0,
-            fans: [],
-            boards: [],
-            pools: [],
-            hashrateHistory: [],
-            health: { power: false, network: false, fan: false, temp: false },
-            lastSeen: new Date().toISOString(),
-            defaultWattage: 100,
-          },
-          saved,
-        }
-      );
-    }
-
-    // Track mobile miners per coin
-    const mobileByCoin = new Map<string, MobileMiner[]>();
-    for (const m of mobileMiners) {
-      const coinId = coinIdFromTicker(m.coin);
-      if (!mobileByCoin.has(coinId)) mobileByCoin.set(coinId, []);
-      mobileByCoin.get(coinId)!.push(m);
-    }
-
-    // Track NerdMiners per coin (each carries its own coin_id, no pool-host resolution needed)
-    const nerdminerByCoin = new Map<string, NerdMinerInfo[]>();
-    for (const nm of nerdMiners) {
-      const coinId = nm.coinId || "bitcoin";
-      if (!nerdminerByCoin.has(coinId)) nerdminerByCoin.set(coinId, []);
-      nerdminerByCoin.get(coinId)!.push(nm);
-    }
-
-    // Merge all coin IDs from ASIC, mobile, and NerdMiners
-    const allCoinIds = new Set([...asicByCoin.keys(), ...mobileByCoin.keys(), ...nerdminerByCoin.keys()]);
-
-    return Array.from(allCoinIds).map((coinId) => {
-      const coin = coins.find((c) => c.id === coinId);
-      const asicGroup = asicByCoin.get(coinId) ?? [];
-      const mobileGroup = mobileByCoin.get(coinId) ?? [];
-      const nerdminerGroup = nerdminerByCoin.get(coinId) ?? [];
-
-      const asicOnline = asicGroup.filter((g) => g.info.online);
-      const mobileOnline = mobileGroup.filter((m) => m.isOnline);
-      const nerdminerOnline = nerdminerGroup.filter((m) => m.online);
-
-      // ASIC hashrate is in the miner's native unit (typically GH/s)
-      const asicHashrate = asicGroup.reduce((s, g) => s + g.info.rtHashrate, 0);
-      const hashrateUnit = asicOnline[0]?.info.hashrateUnit ?? "G";
-
-      // Mobile and NerdMiner hashrate are raw H/s — convert to the ASIC unit for display
-      const mobileHashrateHs = mobileGroup.filter((m) => m.isOnline).reduce((s, m) => s + m.hashrateHs, 0);
-      const nerdminerHashrateHs = nerdminerGroup.filter((m) => m.online).reduce((s, m) => s + m.hashrate1mHs, 0);
-      const unitMultiplier: Record<string, number> = { K: 1e3, M: 1e6, G: 1e9, T: 1e12, P: 1e15 };
-      const mobileInUnit = mobileHashrateHs / (unitMultiplier[hashrateUnit] ?? 1e9);
-      const nerdminerInUnit = nerdminerHashrateHs / (unitMultiplier[hashrateUnit] ?? 1e9);
-
-      const totalHashrate = asicHashrate + mobileInUnit + nerdminerInUnit;
-
-      return {
-        coinId,
-        coin,
-        count: asicGroup.length + mobileGroup.length + nerdminerGroup.length,
-        onlineCount: asicOnline.length + mobileOnline.length + nerdminerOnline.length,
-        offlineCount:
-          (asicGroup.length - asicOnline.length) +
-          (mobileGroup.length - mobileOnline.length) +
-          (nerdminerGroup.length - nerdminerOnline.length),
-        totalHashrate,
-        hashrateUnit,
-        asicCount: asicGroup.length,
-        mobileCount: mobileGroup.length,
-        nerdminerCount: nerdminerGroup.length,
-      };
-    });
-  }, [savedMiners, minerData, coins, poolProfiles, mobileMiners, nerdMiners]);
-
-  useEffect(() => {
-    setCoinEarnings({});
-  }, [currency]);
-
-  useEffect(() => {
-    fetchCoinEarnings(coinGroups, minerData);
-  }, [totalRtHashrate, coinGroups, minerData, fetchCoinEarnings]);
 
   function handleCoinViewChange(mode: CoinViewMode) {
     setCoinViewMode(mode);
@@ -702,7 +397,7 @@ export default function Dashboard() {
               <div className="flex items-center gap-3">
                 <select
                   value={chartCoinId}
-                  onChange={(e) => setChartCoinId(e.target.value)}
+                  onChange={(e) => handleChartCoinChange(e.target.value)}
                   className="bg-dark-900 border border-slate-700/50 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-primary-500/70"
                 >
                   <option value="total">Total</option>
@@ -856,7 +551,7 @@ export default function Dashboard() {
                   return (
                     <div
                       key={coinId}
-                      onClick={() => navigate(`/miners?coin=${encodeURIComponent(coinId)}`)}
+                      onClick={() => navigate(`/coin/${encodeURIComponent(coinId)}`)}
                       className="bg-dark-800 rounded-xl border border-slate-700/50 p-5 cursor-pointer hover:border-primary-500/50 transition-all"
                       style={{ borderLeftWidth: 3, borderLeftColor: color }}
                     >
@@ -990,7 +685,7 @@ export default function Dashboard() {
                       return (
                         <tr
                           key={coinId}
-                          onClick={() => navigate(`/miners?coin=${encodeURIComponent(coinId)}`)}
+                          onClick={() => navigate(`/coin/${encodeURIComponent(coinId)}`)}
                           className="hover:bg-slate-800/50 cursor-pointer transition-colors"
                         >
                           <td className="px-5 py-3">
