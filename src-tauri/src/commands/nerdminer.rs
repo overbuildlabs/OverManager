@@ -22,8 +22,6 @@ pub struct SavedNerdMiner {
     pub id: String,
     pub label: String,
     pub address: String,
-    #[serde(default)]
-    pub worker: String,
     #[serde(default = "default_pool_host")]
     pub pool_host: String,
     /// Coin this miner's solo-pool address mines. Stock NerdMiner_v2 firmware
@@ -49,7 +47,6 @@ pub struct NerdMinerInfo {
     pub id: String,
     pub label: String,
     pub address: String,
-    pub worker: String,
     pub pool_host: String,
     pub coin_id: String,
     pub online: bool,
@@ -114,7 +111,6 @@ pub async fn fetch_nerdminer_info(saved: &SavedNerdMiner) -> NerdMinerInfo {
         id: saved.id.clone(),
         label: saved.label.clone(),
         address: saved.address.clone(),
-        worker: saved.worker.clone(),
         pool_host: saved.pool_host.clone(),
         coin_id: saved.coin_id.clone(),
         last_seen: Utc::now().to_rfc3339(),
@@ -232,7 +228,6 @@ pub fn get_saved_nerdminers() -> Result<Vec<SavedNerdMiner>, String> {
 pub fn add_nerdminer(
     address: String,
     label: Option<String>,
-    worker: Option<String>,
     pool_host: Option<String>,
     coin_id: Option<String>,
 ) -> Result<Vec<SavedNerdMiner>, String> {
@@ -248,7 +243,6 @@ pub fn add_nerdminer(
         id: uuid::Uuid::new_v4().to_string(),
         label: label.unwrap_or_else(|| address.clone()),
         address,
-        worker: worker.unwrap_or_default(),
         pool_host: pool_host.filter(|h| !h.is_empty()).unwrap_or_else(default_pool_host),
         coin_id: coin_id.filter(|c| !c.is_empty()).unwrap_or_else(default_coin_id),
         added_at: Utc::now().to_rfc3339(),
@@ -275,7 +269,7 @@ pub fn update_nerdminer_label(id: String, label: String) -> Result<Vec<SavedNerd
     Ok(miners)
 }
 
-/// Full edit of a saved NerdMiner — label, address, worker, and pool host were
+/// Full edit of a saved NerdMiner — label, address, and pool host were
 /// previously only settable at add-time, forcing a delete+re-add for any
 /// correction (e.g. a typo'd address or switching pool host).
 #[tauri::command]
@@ -283,7 +277,6 @@ pub fn update_nerdminer(
     id: String,
     label: Option<String>,
     address: Option<String>,
-    worker: Option<String>,
     pool_host: Option<String>,
 ) -> Result<Vec<SavedNerdMiner>, String> {
     let mut miners = load_nerdminers();
@@ -302,9 +295,6 @@ pub fn update_nerdminer(
             return Err("BTC address is required".to_string());
         }
         m.address = address.to_string();
-    }
-    if let Some(worker) = worker {
-        m.worker = worker.trim().to_string();
     }
     if let Some(pool_host) = pool_host {
         let pool_host = pool_host.trim();

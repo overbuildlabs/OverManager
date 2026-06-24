@@ -44,7 +44,6 @@ function AddNerdMinerPanel({
 }) {
   const [address, setAddress] = useState("");
   const [label, setLabel] = useState("");
-  const [worker, setWorker] = useState("");
   const [poolHost, setPoolHost] = useState("");
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,12 +57,10 @@ function AddNerdMinerPanel({
       await invoke("add_nerdminer", {
         address: addr,
         label: label.trim() || null,
-        worker: worker.trim() || null,
         poolHost: poolHost.trim() || null,
       });
       setAddress("");
       setLabel("");
-      setWorker("");
       setPoolHost("");
       onAdded();
     } catch (err) {
@@ -118,19 +115,6 @@ function AddNerdMinerPanel({
             placeholder="Garage NerdMiner"
           />
         </div>
-        <div className="flex-1 min-w-[140px]">
-          <label className="block text-xs font-medium text-slate-400 mb-1">
-            Worker <span className="text-slate-500">(optional)</span>
-          </label>
-          <input
-            type="text"
-            value={worker}
-            onChange={(e) => setWorker(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            className="w-full bg-dark-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary-500"
-            placeholder="nerdminer1"
-          />
-        </div>
         <div className="flex-1 min-w-[180px]">
           <label className="block text-xs font-medium text-slate-400 mb-1">
             Pool host <span className="text-slate-500">(optional)</span>
@@ -170,7 +154,6 @@ function EditNerdMinerModal({
 }) {
   const [label, setLabel] = useState(saved.label);
   const [address, setAddress] = useState(saved.address);
-  const [worker, setWorker] = useState(saved.worker);
   const [poolHost, setPoolHost] = useState(saved.pool_host);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -187,7 +170,6 @@ function EditNerdMinerModal({
         id: saved.id,
         label: label.trim() || saved.label,
         address: address.trim(),
-        worker: worker.trim(),
         poolHost: poolHost.trim(),
       });
       onSaved();
@@ -224,29 +206,15 @@ function EditNerdMinerModal({
               placeholder="bc1q..."
             />
           </div>
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-slate-400 mb-1">
-                Worker <span className="text-slate-500">(optional)</span>
-              </label>
-              <input
-                type="text"
-                value={worker}
-                onChange={(e) => setWorker(e.target.value)}
-                className="w-full bg-dark-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary-500"
-                placeholder="nerdminer1"
-              />
-            </div>
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-slate-400 mb-1">Pool host</label>
-              <input
-                type="text"
-                value={poolHost}
-                onChange={(e) => setPoolHost(e.target.value)}
-                className="w-full bg-dark-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary-500"
-                placeholder="pool.nerdminers.org"
-              />
-            </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1">Pool host</label>
+            <input
+              type="text"
+              value={poolHost}
+              onChange={(e) => setPoolHost(e.target.value)}
+              className="w-full bg-dark-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary-500"
+              placeholder="pool.nerdminers.org"
+            />
           </div>
         </div>
         {error && <p className="text-red-400 text-xs mt-3">{error}</p>}
@@ -296,10 +264,7 @@ function NerdMinerCard({
             <span className="truncate">{saved.label}</span>
           </h3>
           <p className="text-xs text-slate-500 font-mono truncate mt-0.5">{saved.address}</p>
-          <p className="text-xs text-slate-500 mt-0.5">
-            {saved.pool_host}
-            {saved.worker ? ` · ${saved.worker}` : ""}
-          </p>
+          <p className="text-xs text-slate-500 mt-0.5">{saved.pool_host}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-white ${statusColor}`}>

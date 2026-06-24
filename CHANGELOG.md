@@ -16,6 +16,14 @@
   `shares: 2320022.0`) instead of integers. The poller now also logs the HTTP
   status and a snippet of the raw response body when a parse does fail, so any
   remaining deployment quirks are diagnosable.
+- **Pool Profiles** no longer shows "No online miners" for a profile that
+  real, online ASIC/mobile miners are actually mining to. The matching logic
+  was only treating a pool slot as "active" when the miner's firmware set its
+  `connect` flag, missing miners that instead report an up link via
+  `state === 1` (the same detection already used elsewhere in the app); it
+  also now falls back to hostname-only matching when one side's stratum
+  address omits a port, and checks all three pool slots (not just the
+  primary) when tagging a miner's coin from its pool address.
 
 ### New
 

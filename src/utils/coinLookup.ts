@@ -18,10 +18,12 @@ export function getMinerCoinId(
   if (minerPoolAddr) {
     const minerHost = extractHostname(minerPoolAddr);
     if (minerHost) {
-      const matchingProfile = poolProfiles.find((p) => {
-        const profileHost = extractHostname(p.pool1addr);
-        return profileHost && profileHost === minerHost;
-      });
+      const matchingProfile = poolProfiles.find((p) =>
+        [p.pool1addr, p.pool2addr, p.pool3addr].some((addr) => {
+          const profileHost = extractHostname(addr);
+          return profileHost && profileHost === minerHost;
+        })
+      );
       if (matchingProfile?.coin_id) return matchingProfile.coin_id;
     }
   }

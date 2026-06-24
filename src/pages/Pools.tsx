@@ -373,14 +373,21 @@ export default function Pools() {
   }
 
   function getMinersForProfile(profile: PoolProfile): PoolMinerMatch[] {
-    const slots: { slot: 1 | 2 | 3; hostport: string }[] = ([1, 2, 3] as const)
-      .map((n) => ({
-        slot: n,
-        hostport: extractHostPort(profile[`pool${n}addr` as keyof PoolProfile] as string),
-      }))
+    const slots: { slot: 1 | 2 | 3; hostport: string; hostname: string }[] = ([1, 2, 3] as const)
+      .map((n) => {
+        const addr = profile[`pool${n}addr` as keyof PoolProfile] as string;
+        return { slot: n, hostport: extractHostPort(addr), hostname: extractHostname(addr) };
+      })
       .filter((s) => s.hostport);
 
     if (slots.length === 0) return [];
+
+    // Match on host:port when both sides specify a port; otherwise fall back
+    // to hostname-only so a profile/miner pair that differs only in whether a
+    // port was typed in still matches.
+    const findSlot = (minerHostPort: string, minerHostname: string) =>
+      slots.find((s) => s.hostport === minerHostPort) ??
+      slots.find((s) => s.hostname === minerHostname);
 
     const matches: PoolMinerMatch[] = [];
 
@@ -388,11 +395,11 @@ export default function Pools() {
     for (const saved of savedMiners) {
       const info = minerData.get(saved.ip);
       if (!info) continue;
-      const activePool = info.pools.find((p) => p.connect) ?? info.pools[0];
+      const activePool = info.pools.find((p) => p.connect || p.state === 1) ?? info.pools[0];
       if (!activePool) continue;
       const minerHostPort = extractHostPort(activePool.addr);
       if (!minerHostPort) continue;
-      const matched = slots.find((s) => s.hostport === minerHostPort);
+      const matched = findSlot(minerHostPort, extractHostname(activePool.addr));
       if (!matched) continue;
 
       const label =
@@ -420,7 +427,7 @@ export default function Pools() {
       if (!m.pool) continue;
       const minerHostPort = extractHostPort(m.pool);
       if (!minerHostPort) continue;
-      const matched = slots.find((s) => s.hostport === minerHostPort);
+      const matched = findSlot(minerHostPort, extractHostname(m.pool));
       if (!matched) continue;
 
       matches.push({
