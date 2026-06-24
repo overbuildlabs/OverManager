@@ -157,16 +157,131 @@ function AddNerdMinerPanel({
   );
 }
 
+// ─── Edit modal ───────────────────────────────────────────────────────────────
+
+function EditNerdMinerModal({
+  saved,
+  onClose,
+  onSaved,
+}: {
+  saved: SavedNerdMiner;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [label, setLabel] = useState(saved.label);
+  const [address, setAddress] = useState(saved.address);
+  const [worker, setWorker] = useState(saved.worker);
+  const [poolHost, setPoolHost] = useState(saved.pool_host);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSave() {
+    if (!address.trim()) {
+      setError("BTC address is required");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await invoke("update_nerdminer", {
+        id: saved.id,
+        label: label.trim() || saved.label,
+        address: address.trim(),
+        worker: worker.trim(),
+        poolHost: poolHost.trim(),
+      });
+      onSaved();
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 bg-dark-800 border border-slate-700/50 rounded-2xl p-6 w-full max-w-lg shadow-2xl">
+        <h3 className="text-lg font-semibold text-white mb-4">Edit NerdMiner</h3>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1">Label</label>
+            <input
+              type="text"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              className="w-full bg-dark-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary-500"
+              placeholder="Garage NerdMiner"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1">BTC Address</label>
+            <input
+              type="text"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className="w-full bg-dark-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-primary-500"
+              placeholder="bc1q..."
+            />
+          </div>
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-slate-400 mb-1">
+                Worker <span className="text-slate-500">(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={worker}
+                onChange={(e) => setWorker(e.target.value)}
+                className="w-full bg-dark-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary-500"
+                placeholder="nerdminer1"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-slate-400 mb-1">Pool host</label>
+              <input
+                type="text"
+                value={poolHost}
+                onChange={(e) => setPoolHost(e.target.value)}
+                className="w-full bg-dark-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary-500"
+                placeholder="pool.nerdminers.org"
+              />
+            </div>
+          </div>
+        </div>
+        {error && <p className="text-red-400 text-xs mt-3">{error}</p>}
+        <div className="flex gap-2 justify-end mt-5">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg"
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
 function NerdMinerCard({
   saved,
   info,
   onRemove,
+  onEdit,
 }: {
   saved: SavedNerdMiner;
   info: NerdMinerInfo | undefined;
   onRemove: () => void;
+  onEdit: () => void;
 }) {
   const online = info?.online ?? false;
   const statusColor = online ? "bg-emerald-500" : "bg-slate-500";
@@ -191,6 +306,20 @@ function NerdMinerCard({
             <span className="w-1.5 h-1.5 rounded-full bg-white/70" />
             {statusText}
           </span>
+          <button
+            onClick={onEdit}
+            title="Edit"
+            className="p-1.5 rounded-md text-slate-500 hover:text-white hover:bg-dark-700 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              />
+            </svg>
+          </button>
           <button
             onClick={onRemove}
             title="Remove"
@@ -243,6 +372,7 @@ export default function NerdMinerList() {
   const [loading, setLoading] = useState(true);
   const [showAddPanel, setShowAddPanel] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<SavedNerdMiner | null>(null);
+  const [editTarget, setEditTarget] = useState<SavedNerdMiner | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -327,9 +457,18 @@ export default function NerdMinerList() {
               saved={s}
               info={infos.get(s.id)}
               onRemove={() => setRemoveTarget(s)}
+              onEdit={() => setEditTarget(s)}
             />
           ))}
         </div>
+      )}
+
+      {editTarget && (
+        <EditNerdMinerModal
+          saved={editTarget}
+          onClose={() => setEditTarget(null)}
+          onSaved={() => { setEditTarget(null); refresh(); }}
+        />
       )}
 
       {removeTarget && (

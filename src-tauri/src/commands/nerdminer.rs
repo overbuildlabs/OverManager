@@ -275,6 +275,45 @@ pub fn update_nerdminer_label(id: String, label: String) -> Result<Vec<SavedNerd
     Ok(miners)
 }
 
+/// Full edit of a saved NerdMiner — label, address, worker, and pool host were
+/// previously only settable at add-time, forcing a delete+re-add for any
+/// correction (e.g. a typo'd address or switching pool host).
+#[tauri::command]
+pub fn update_nerdminer(
+    id: String,
+    label: Option<String>,
+    address: Option<String>,
+    worker: Option<String>,
+    pool_host: Option<String>,
+) -> Result<Vec<SavedNerdMiner>, String> {
+    let mut miners = load_nerdminers();
+    let Some(m) = miners.iter_mut().find(|m| m.id == id) else {
+        return Err("NerdMiner not found".to_string());
+    };
+    if let Some(label) = label {
+        let label = label.trim();
+        if !label.is_empty() {
+            m.label = label.to_string();
+        }
+    }
+    if let Some(address) = address {
+        let address = address.trim();
+        if address.is_empty() {
+            return Err("BTC address is required".to_string());
+        }
+        m.address = address.to_string();
+    }
+    if let Some(worker) = worker {
+        m.worker = worker.trim().to_string();
+    }
+    if let Some(pool_host) = pool_host {
+        let pool_host = pool_host.trim();
+        m.pool_host = if pool_host.is_empty() { default_pool_host() } else { pool_host.to_string() };
+    }
+    save_nerdminers(&miners)?;
+    Ok(miners)
+}
+
 #[tauri::command]
 pub fn update_nerdminer_coin(id: String, coin_id: String) -> Result<Vec<SavedNerdMiner>, String> {
     let mut miners = load_nerdminers();

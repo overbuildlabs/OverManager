@@ -47,7 +47,7 @@ use cached_state::{
 };
 use commands::nerdminer::{
     get_saved_nerdminers, add_nerdminer, remove_nerdminer, update_nerdminer_label,
-    update_nerdminer_coin,
+    update_nerdminer_coin, update_nerdminer,
 };
 use commands::mobile_miner::{
     get_mobile_miners, remove_mobile_miner, update_mobile_miner_name,
@@ -377,6 +377,7 @@ pub fn run() {
             remove_nerdminer,
             update_nerdminer_label,
             update_nerdminer_coin,
+            update_nerdminer,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
