@@ -26,11 +26,21 @@ pub struct SavedNerdMiner {
     pub worker: String,
     #[serde(default = "default_pool_host")]
     pub pool_host: String,
+    /// Coin this miner's solo-pool address mines. Stock NerdMiner_v2 firmware
+    /// only solo-mines BTC today, but this is an explicit field (not
+    /// hardcoded) so a future firmware/pool variant for another coin doesn't
+    /// need another migration.
+    #[serde(default = "default_coin_id")]
+    pub coin_id: String,
     pub added_at: String,
 }
 
 fn default_pool_host() -> String {
     DEFAULT_POOL_HOST.to_string()
+}
+
+fn default_coin_id() -> String {
+    "bitcoin".to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -41,6 +51,7 @@ pub struct NerdMinerInfo {
     pub address: String,
     pub worker: String,
     pub pool_host: String,
+    pub coin_id: String,
     pub online: bool,
     /// H/s — NerdMiner is kH/s-scale, unlike GH/s-scale ASICs.
     pub hashrate_1m_hs: f64,
@@ -101,6 +112,7 @@ pub async fn fetch_nerdminer_info(saved: &SavedNerdMiner) -> NerdMinerInfo {
         address: saved.address.clone(),
         worker: saved.worker.clone(),
         pool_host: saved.pool_host.clone(),
+        coin_id: saved.coin_id.clone(),
         last_seen: Utc::now().to_rfc3339(),
         ..Default::default()
     };
@@ -191,6 +203,7 @@ pub fn add_nerdminer(
     label: Option<String>,
     worker: Option<String>,
     pool_host: Option<String>,
+    coin_id: Option<String>,
 ) -> Result<Vec<SavedNerdMiner>, String> {
     let address = address.trim().to_string();
     if address.is_empty() {
@@ -206,6 +219,7 @@ pub fn add_nerdminer(
         address,
         worker: worker.unwrap_or_default(),
         pool_host: pool_host.filter(|h| !h.is_empty()).unwrap_or_else(default_pool_host),
+        coin_id: coin_id.filter(|c| !c.is_empty()).unwrap_or_else(default_coin_id),
         added_at: Utc::now().to_rfc3339(),
     });
     save_nerdminers(&miners)?;
@@ -225,6 +239,16 @@ pub fn update_nerdminer_label(id: String, label: String) -> Result<Vec<SavedNerd
     let mut miners = load_nerdminers();
     if let Some(m) = miners.iter_mut().find(|m| m.id == id) {
         m.label = label;
+    }
+    save_nerdminers(&miners)?;
+    Ok(miners)
+}
+
+#[tauri::command]
+pub fn update_nerdminer_coin(id: String, coin_id: String) -> Result<Vec<SavedNerdMiner>, String> {
+    let mut miners = load_nerdminers();
+    if let Some(m) = miners.iter_mut().find(|m| m.id == id) {
+        m.coin_id = coin_id;
     }
     save_nerdminers(&miners)?;
     Ok(miners)

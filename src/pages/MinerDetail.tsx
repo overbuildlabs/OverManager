@@ -446,6 +446,28 @@ export default function MinerDetail() {
             Estimated Earnings
           </h3>
           <div className="flex items-center gap-2">
+            <label className="text-xs text-slate-500" title="Pool-host matching takes priority over this when it applies">
+              Coin:
+            </label>
+            <select
+              value={savedCoinId}
+              onChange={async (e) => {
+                const newCoinId = e.target.value;
+                setSavedCoinId(newCoinId);
+                try {
+                  await invoke("update_miner_coin", { ip: decodedIp, coinId: newCoinId });
+                } catch (err) {
+                  console.error("Failed to update miner coin:", err);
+                }
+              }}
+              className="bg-dark-900 border border-slate-700/50 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-primary-500/70"
+            >
+              {coins.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.ticker}
+                </option>
+              ))}
+            </select>
             <label className="text-xs text-slate-500">Pool fee:</label>
             <input
               type="number"

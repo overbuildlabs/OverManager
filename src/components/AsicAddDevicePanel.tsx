@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import type { MinerInfo, ScanResult, SavedMiner } from "../types/miner";
+import type { MinerInfo, ScanResult, SavedMiner, CoinConfig } from "../types/miner";
 
 interface AsicAddDevicePanelProps {
   onClose?: () => void;
@@ -15,16 +15,20 @@ export default function AsicAddDevicePanel({ onClose, onMinersAdded }: AsicAddDe
   const [subnetDetected, setSubnetDetected] = useState(false);
 
   const [savedMiners, setSavedMiners] = useState<SavedMiner[]>([]);
+  const [coins, setCoins] = useState<CoinConfig[]>([]);
   const [addIp, setAddIp] = useState("");
   const [addLabel, setAddLabel] = useState("");
   const [addWattage, setAddWattage] = useState(100);
+  const [addCoinId, setAddCoinId] = useState("kaspa");
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
   const [selectedIps, setSelectedIps] = useState<Set<string>>(new Set());
+  const [scanCoinId, setScanCoinId] = useState("kaspa");
 
   useEffect(() => {
     invoke<SavedMiner[]>("get_saved_miners").then(setSavedMiners).catch(console.error);
+    invoke<CoinConfig[]>("get_coins").then(setCoins).catch(console.error);
     invoke<string>("get_local_subnet")
       .then((subnet) => {
         setScanRange(subnet);
@@ -60,7 +64,7 @@ export default function AsicAddDevicePanel({ onClose, onMinersAdded }: AsicAddDe
       const updated = await invoke<SavedMiner[]>("add_miner", {
         ip,
         label: addLabel.trim() || null,
-        coinId: "kaspa",
+        coinId: addCoinId,
         wattage: addWattage,
         manufacturer: info.manufacturer || null,
       });
@@ -84,7 +88,7 @@ export default function AsicAddDevicePanel({ onClose, onMinersAdded }: AsicAddDe
     if (!ips.length) return;
     try {
       const manufacturers = ips.map((ip) => scannedMiners.find((m) => m.ip === ip)?.manufacturer ?? "");
-      const updated = await invoke<SavedMiner[]>("import_from_scan", { ips, manufacturers, coinId: "kaspa" });
+      const updated = await invoke<SavedMiner[]>("import_from_scan", { ips, manufacturers, coinId: scanCoinId });
       setSavedMiners(updated);
       setSelectedIps(new Set());
       // Update wattages for newly imported miners from scan data
@@ -189,6 +193,20 @@ export default function AsicAddDevicePanel({ onClose, onMinersAdded }: AsicAddDe
                 placeholder="100"
               />
             </div>
+            <div className="min-w-[120px]">
+              <label className="block text-xs font-medium text-slate-400 mb-1">Coin</label>
+              <select
+                value={addCoinId}
+                onChange={(e) => setAddCoinId(e.target.value)}
+                className="w-full bg-dark-800 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary-500"
+              >
+                {coins.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.ticker}
+                  </option>
+                ))}
+              </select>
+            </div>
             <button
               onClick={handleAddMiner}
               disabled={adding || !addIp.trim()}
@@ -240,19 +258,33 @@ export default function AsicAddDevicePanel({ onClose, onMinersAdded }: AsicAddDe
         {/* Scan Results */}
         {scannedMiners.length > 0 && (
           <div className="bg-dark-900 rounded-xl border border-slate-700/50 overflow-hidden">
-            <div className="px-5 py-3 border-b border-slate-700/50 flex items-center justify-between">
-              <button
-                onClick={handleAddMinersFromScan}
-                className={`px-4 py-1.5 text-white text-xs font-medium rounded-lg transition-colors ${
-                  selectedIps.size > 0
-                    ? "bg-purple-600 hover:bg-purple-700"
-                    : "bg-primary-600 hover:bg-primary-700"
-                }`}
-              >
-                {selectedIps.size > 0
-                  ? `Add Selected (${selectedIps.size}) to be Monitored`
-                  : "Add All to be Monitored"}
-              </button>
+            <div className="px-5 py-3 border-b border-slate-700/50 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleAddMinersFromScan}
+                  className={`px-4 py-1.5 text-white text-xs font-medium rounded-lg transition-colors ${
+                    selectedIps.size > 0
+                      ? "bg-purple-600 hover:bg-purple-700"
+                      : "bg-primary-600 hover:bg-primary-700"
+                  }`}
+                >
+                  {selectedIps.size > 0
+                    ? `Add Selected (${selectedIps.size}) to be Monitored`
+                    : "Add All to be Monitored"}
+                </button>
+                <select
+                  value={scanCoinId}
+                  onChange={(e) => setScanCoinId(e.target.value)}
+                  className="bg-dark-800 border border-slate-600 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-primary-500"
+                  title="Coin to tag these miners with"
+                >
+                  {coins.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.ticker}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <span className="text-sm font-semibold text-slate-300">
                 Scan Results ({scannedMiners.length})
               </span>

@@ -415,6 +415,8 @@ async fn build_and_persist_snapshot(
         map.values().cloned().collect()
     };
 
+    let nerdminers = cache.nerdminers.lock().unwrap().clone();
+
     // Aggregate by coin: ASIC hashrate in its native unit, mobile in H/s (kept
     // separate because the unit differs). The existing schema stores hashrate
     // as f64 in the unit reported by ASIC miners (typically GH/s); we keep
@@ -467,6 +469,23 @@ async fn build_and_persist_snapshot(
         entry.miner_count += 1;
         // Note: mobile miners don't add to total_hashrate (kept in ASIC unit
         // for the top-line chart, again matching existing Dashboard logic).
+    }
+
+    // NerdMiner: H/s → GH/s, same as mobile. Carries its own coin_id (set at
+    // add-time) since these are solo-pool monitored, not pool-host-resolvable.
+    for nm in &nerdminers {
+        if !nm.online {
+            continue;
+        }
+        let entry = coin_data.entry(nm.coin_id.clone()).or_insert(CoinSnapshot {
+            hashrate: 0.0,
+            miner_count: 0,
+            daily_earnings_coins: 0.0,
+            daily_earnings_fiat: 0.0,
+        });
+        entry.hashrate += nm.hashrate_1m_hs / 1e9;
+        entry.miner_count += 1;
+        // Note: NerdMiners don't add to total_hashrate, same reasoning as mobile.
     }
 
     let total_miners = asic.len() as u32;

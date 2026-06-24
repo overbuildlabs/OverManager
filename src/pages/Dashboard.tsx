@@ -10,7 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import type { MinerInfo, SavedMiner, CoinEarnings, CoinConfig, FarmSnapshot, UptimeStats, MobileMiner, PopMinerDevice } from "../types/miner";
+import type { MinerInfo, SavedMiner, CoinEarnings, CoinConfig, FarmSnapshot, UptimeStats, MobileMiner, PopMinerDevice, NerdMinerInfo } from "../types/miner";
 import { getMinerCoinId } from "../utils/coinLookup";
 import { getCoinIcon } from "../utils/coinIcon";
 import { useProfitability } from "../context/ProfitabilityContext";
@@ -22,6 +22,7 @@ interface CachedFarmStateResponse {
   asicMiners: MinerInfo[];
   mobileMiners: MobileMiner[];
   popminerDevices: PopMinerDevice[];
+  nerdminers: NerdMinerInfo[];
   farmSnapshot: FarmSnapshot | null;
   lastAsicPollMs: number;
   lastSnapshotMs: number;
@@ -46,6 +47,7 @@ interface CoinGroup {
   hashrateUnit: string;
   asicCount: number;
   mobileCount: number;
+  nerdminerCount: number;
 }
 
 const COIN_TICKER_TO_ID: Record<string, string> = { KAS: "kaspa", BTC: "bitcoin" };
@@ -87,6 +89,7 @@ export default function Dashboard() {
   const [minerData, setMinerData] = useState<MinerWithSaved[]>([]);
   const [mobileMiners, setMobileMiners] = useState<MobileMiner[]>([]);
   const [popMinerDevices, setPopMinerDevices] = useState<PopMinerDevice[]>([]);
+  const [nerdMiners, setNerdMiners] = useState<NerdMinerInfo[]>([]);
   const [savedMiners, setSavedMiners] = useState<SavedMiner[]>([]);
   const [coins, setCoins] = useState<CoinConfig[]>([]);
   const [lastPollMs, setLastPollMs] = useState<number>(0);
@@ -99,6 +102,7 @@ export default function Dashboard() {
   });
   const [farmHistory, setFarmHistory] = useState<FarmSnapshot[]>([]);
   const [chartRange, setChartRange] = useState<ChartRange>(24);
+  const [chartCoinId, setChartCoinId] = useState<string>("total");
   const [profitRange, setProfitRange] = useState<ProfitRange>(24);
   const [fleetUptime, setFleetUptime] = useState<number | null>(null);
 
@@ -160,6 +164,7 @@ export default function Dashboard() {
         setMinerData(data);
         setMobileMiners(cached.mobileMiners);
         setPopMinerDevices(cached.popminerDevices);
+        setNerdMiners(cached.nerdminers ?? []);
         setLastPollMs(cached.lastAsicPollMs);
       } catch (err) {
         console.error("Failed to load cached farm state:", err);
@@ -334,41 +339,57 @@ export default function Dashboard() {
       mobileByCoin.get(coinId)!.push(m);
     }
 
-    // Merge all coin IDs from both ASIC and mobile
-    const allCoinIds = new Set([...asicByCoin.keys(), ...mobileByCoin.keys()]);
+    // Track NerdMiners per coin (each carries its own coin_id, no pool-host resolution needed)
+    const nerdminerByCoin = new Map<string, NerdMinerInfo[]>();
+    for (const nm of nerdMiners) {
+      const coinId = nm.coinId || "bitcoin";
+      if (!nerdminerByCoin.has(coinId)) nerdminerByCoin.set(coinId, []);
+      nerdminerByCoin.get(coinId)!.push(nm);
+    }
+
+    // Merge all coin IDs from ASIC, mobile, and NerdMiners
+    const allCoinIds = new Set([...asicByCoin.keys(), ...mobileByCoin.keys(), ...nerdminerByCoin.keys()]);
 
     return Array.from(allCoinIds).map((coinId) => {
       const coin = coins.find((c) => c.id === coinId);
       const asicGroup = asicByCoin.get(coinId) ?? [];
       const mobileGroup = mobileByCoin.get(coinId) ?? [];
+      const nerdminerGroup = nerdminerByCoin.get(coinId) ?? [];
 
       const asicOnline = asicGroup.filter((g) => g.info.online);
       const mobileOnline = mobileGroup.filter((m) => m.isOnline);
+      const nerdminerOnline = nerdminerGroup.filter((m) => m.online);
 
       // ASIC hashrate is in the miner's native unit (typically GH/s)
       const asicHashrate = asicGroup.reduce((s, g) => s + g.info.rtHashrate, 0);
       const hashrateUnit = asicOnline[0]?.info.hashrateUnit ?? "G";
 
-      // Mobile hashrate is raw H/s — convert to the ASIC unit for display
+      // Mobile and NerdMiner hashrate are raw H/s — convert to the ASIC unit for display
       const mobileHashrateHs = mobileGroup.filter((m) => m.isOnline).reduce((s, m) => s + m.hashrateHs, 0);
+      const nerdminerHashrateHs = nerdminerGroup.filter((m) => m.online).reduce((s, m) => s + m.hashrate1mHs, 0);
       const unitMultiplier: Record<string, number> = { K: 1e3, M: 1e6, G: 1e9, T: 1e12, P: 1e15 };
       const mobileInUnit = mobileHashrateHs / (unitMultiplier[hashrateUnit] ?? 1e9);
+      const nerdminerInUnit = nerdminerHashrateHs / (unitMultiplier[hashrateUnit] ?? 1e9);
 
-      const totalHashrate = asicHashrate + mobileInUnit;
+      const totalHashrate = asicHashrate + mobileInUnit + nerdminerInUnit;
 
       return {
         coinId,
         coin,
-        count: asicGroup.length + mobileGroup.length,
-        onlineCount: asicOnline.length + mobileOnline.length,
-        offlineCount: (asicGroup.length - asicOnline.length) + (mobileGroup.length - mobileOnline.length),
+        count: asicGroup.length + mobileGroup.length + nerdminerGroup.length,
+        onlineCount: asicOnline.length + mobileOnline.length + nerdminerOnline.length,
+        offlineCount:
+          (asicGroup.length - asicOnline.length) +
+          (mobileGroup.length - mobileOnline.length) +
+          (nerdminerGroup.length - nerdminerOnline.length),
         totalHashrate,
         hashrateUnit,
         asicCount: asicGroup.length,
         mobileCount: mobileGroup.length,
+        nerdminerCount: nerdminerGroup.length,
       };
     });
-  }, [savedMiners, minerData, coins, poolProfiles, mobileMiners]);
+  }, [savedMiners, minerData, coins, poolProfiles, mobileMiners, nerdMiners]);
 
   useEffect(() => {
     setCoinEarnings({});
@@ -666,28 +687,46 @@ export default function Dashboard() {
         const filtered = farmHistory.filter((s) => s.timestamp > cutoffSecs);
         const chartData = filtered.map((s) => ({
           time: new Date(s.timestamp * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          hashrate: parseFloat(s.totalHashrate.toFixed(2)),
+          hashrate: parseFloat(
+            (chartCoinId === "total" ? s.totalHashrate : s.coinData[chartCoinId]?.hashrate ?? 0).toFixed(2)
+          ),
         }));
+        const chartCoin = coinGroups.find((g) => g.coinId === chartCoinId);
+        const chartTicker = chartCoinId === "total" ? null : chartCoin?.coin?.ticker ?? chartCoinId.toUpperCase();
         return (
           <div className="mb-6 bg-dark-800 rounded-xl border border-slate-700/50 p-5">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
-                Total Farm Hashrate
+                {chartTicker ? `${chartTicker} Hashrate` : "Total Farm Hashrate"}
               </h3>
-              <div className="flex items-center gap-1">
-                {([1, 6, 24, 168, 720] as ChartRange[]).map((h) => (
-                  <button
-                    key={h}
-                    onClick={() => setChartRange(h)}
-                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                      chartRange === h
-                        ? "bg-primary-600 text-white"
-                        : "text-slate-400 hover:text-white bg-dark-900"
-                    }`}
-                  >
-                    {h === 168 ? "7d" : h === 720 ? "30d" : `${h}h`}
-                  </button>
-                ))}
+              <div className="flex items-center gap-3">
+                <select
+                  value={chartCoinId}
+                  onChange={(e) => setChartCoinId(e.target.value)}
+                  className="bg-dark-900 border border-slate-700/50 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-primary-500/70"
+                >
+                  <option value="total">Total</option>
+                  {coinGroups.map((g) => (
+                    <option key={g.coinId} value={g.coinId}>
+                      {g.coin?.ticker ?? g.coinId.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex items-center gap-1">
+                  {([1, 6, 24, 168, 720] as ChartRange[]).map((h) => (
+                    <button
+                      key={h}
+                      onClick={() => setChartRange(h)}
+                      className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                        chartRange === h
+                          ? "bg-primary-600 text-white"
+                          : "text-slate-400 hover:text-white bg-dark-900"
+                      }`}
+                    >
+                      {h === 168 ? "7d" : h === 720 ? "30d" : `${h}h`}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
             <ResponsiveContainer width="100%" height={160}>
@@ -808,7 +847,7 @@ export default function Dashboard() {
           {coinViewMode === "card" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {coinGroups.map(
-                ({ coinId, coin, count, offlineCount, totalHashrate, hashrateUnit, asicCount, mobileCount }) => {
+                ({ coinId, coin, count, offlineCount, totalHashrate, hashrateUnit, asicCount, mobileCount, nerdminerCount }) => {
                   const color = coin?.color ?? "#6366f1";
                   const displayName = coin ? `${coin.name} (${coin.ticker})` : coinId;
                   const earnings = coinEarnings[coinId];
@@ -831,8 +870,19 @@ export default function Dashboard() {
                           </h4>
                           <p className="text-xs text-slate-400 mt-0.5">
                             {count} miner{count !== 1 ? "s" : ""}
-                            {asicCount > 0 && mobileCount > 0 && (
-                              <span className="text-slate-500"> ({asicCount} ASIC, {mobileCount} mobile)</span>
+                            {[
+                              asicCount > 0 ? `${asicCount} ASIC` : null,
+                              mobileCount > 0 ? `${mobileCount} mobile` : null,
+                              nerdminerCount > 0 ? `${nerdminerCount} NerdMiner` : null,
+                            ].filter(Boolean).length > 1 && (
+                              <span className="text-slate-500">
+                                {" "}
+                                ({[
+                                  asicCount > 0 ? `${asicCount} ASIC` : null,
+                                  mobileCount > 0 ? `${mobileCount} mobile` : null,
+                                  nerdminerCount > 0 ? `${nerdminerCount} NerdMiner` : null,
+                                ].filter(Boolean).join(", ")})
+                              </span>
                             )}
                           </p>
                         </div>

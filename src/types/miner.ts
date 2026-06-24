@@ -268,6 +268,7 @@ export interface SavedNerdMiner {
   address: string;
   worker: string;
   pool_host: string;
+  coin_id: string;
   added_at: string;
 }
 
@@ -277,6 +278,7 @@ export interface NerdMinerInfo {
   address: string;
   worker: string;
   poolHost: string;
+  coinId: string;
   online: boolean;
   hashrate1mHs: number;
   hashrate5mHs: number;

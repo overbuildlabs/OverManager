@@ -20,6 +20,7 @@ use commands::{
 };
 use commands::storage::{
     get_saved_miners, add_miner, remove_miner, update_miner_label, import_from_scan, update_miner_wattage,
+    update_miner_coin,
 };
 use commands::pool_profiles::{
     get_saved_pools, add_pool_profile, update_pool_profile, remove_pool_profile,
@@ -46,6 +47,7 @@ use cached_state::{
 };
 use commands::nerdminer::{
     get_saved_nerdminers, add_nerdminer, remove_nerdminer, update_nerdminer_label,
+    update_nerdminer_coin,
 };
 use commands::mobile_miner::{
     get_mobile_miners, remove_mobile_miner, update_mobile_miner_name,
@@ -294,6 +296,7 @@ pub fn run() {
             update_miner_label,
             import_from_scan,
             update_miner_wattage,
+            update_miner_coin,
             get_saved_pools,
             add_pool_profile,
             update_pool_profile,
@@ -373,6 +376,7 @@ pub fn run() {
             add_nerdminer,
             remove_nerdminer,
             update_nerdminer_label,
+            update_nerdminer_coin,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

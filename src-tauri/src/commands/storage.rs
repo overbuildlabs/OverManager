@@ -101,6 +101,16 @@ pub fn update_miner_label(ip: String, label: String) -> Result<Vec<SavedMiner>, 
     Ok(miners)
 }
 
+#[tauri::command]
+pub fn update_miner_coin(ip: String, coin_id: String) -> Result<Vec<SavedMiner>, String> {
+    let mut miners = load_miners();
+    if let Some(m) = miners.iter_mut().find(|m| m.ip == ip) {
+        m.coin_id = coin_id;
+    }
+    save_miners(&miners)?;
+    Ok(miners)
+}
+
 /// Backfill the `manufacturer` field for a saved miner. Called by the
 /// background poller after a successful auto-detect so subsequent cycles can
 /// go straight to the detected manufacturer's fetcher instead of running
