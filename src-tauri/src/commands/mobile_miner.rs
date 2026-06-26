@@ -62,7 +62,7 @@ pub struct MobileMiner {
 }
 
 fn default_manufacturer() -> String {
-    "PoPMiner".to_string()
+    "OverMiner".to_string()
 }
 fn default_model() -> String {
     "Mobile".to_string()

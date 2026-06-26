@@ -111,13 +111,13 @@ pub fn run() {
             app.manage(std::sync::Arc::clone(&config_arc));
             app.manage(std::sync::Arc::clone(&commands_arc));
 
-            // PoPMiner device discovery (always on — no toggle needed)
-            let saved_popminer = popminer_device::load_saved_devices();
-            let popminer_state = std::sync::Arc::new(popminer_device::PopMinerDevicesState {
-                saved: std::sync::Mutex::new(saved_popminer),
+            // OverMiner device discovery (always on — no toggle needed)
+            let saved_overminer = popminer_device::load_saved_devices();
+            let overminer_state = std::sync::Arc::new(popminer_device::OverMinerDevicesState {
+                saved: std::sync::Mutex::new(saved_overminer),
                 discovered: std::sync::Mutex::new(HashMap::new()),
             });
-            app.manage(std::sync::Arc::clone(&popminer_state));
+            app.manage(std::sync::Arc::clone(&overminer_state));
 
             // Cloud sync state
             let cloud_state = std::sync::Arc::new(cloud::CloudState::new());
@@ -159,10 +159,10 @@ pub fn run() {
                 ));
             }
 
-            let app_handle_for_popminer = app.handle().clone();
-            let popminer_state_clone = std::sync::Arc::clone(&popminer_state);
+            let app_handle_for_overminer = app.handle().clone();
+            let overminer_state_clone = std::sync::Arc::clone(&overminer_state);
             tauri::async_runtime::spawn(async move {
-                popminer_device::start_popminer_discovery(app_handle_for_popminer, popminer_state_clone).await;
+                popminer_device::start_overminer_discovery(app_handle_for_overminer, overminer_state_clone).await;
             });
 
             // Cached farm state + background poller. The poller owns ALL data
@@ -176,7 +176,7 @@ pub fn run() {
                 app.handle().clone(),
                 std::sync::Arc::clone(&cached_state),
                 std::sync::Arc::clone(&miners_arc),
-                std::sync::Arc::clone(&popminer_state),
+                std::sync::Arc::clone(&overminer_state),
             );
 
             // Offline detection task: mark miners as offline if they miss 2 intervals.

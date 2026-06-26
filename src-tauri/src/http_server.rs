@@ -177,7 +177,7 @@ async fn handle_register(
         device_model: body.device_model.unwrap_or_default(),
         os_version: body.os_version.unwrap_or_default(),
         app_version: body.app_version.unwrap_or_default(),
-        manufacturer: "PoPMiner".to_string(),
+        manufacturer: "OverMiner".to_string(),
         model: "Mobile".to_string(),
         registered_at: now,
         last_report_timestamp: now,

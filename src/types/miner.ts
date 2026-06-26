@@ -236,7 +236,7 @@ export interface FarmSnapshot {
   coinData: Record<string, CoinSnapshot>;
 }
 
-export interface PopMinerDevice {
+export interface OverMinerDevice {
   mac: string;
   name: string;
   model: string;

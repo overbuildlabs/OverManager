@@ -9,7 +9,7 @@ import type {
   FarmSnapshot,
   UptimeStats,
   MobileMiner,
-  PopMinerDevice,
+  OverMinerDevice,
   NerdMinerInfo,
 } from "../types/miner";
 import { getMinerCoinId } from "../utils/coinLookup";
@@ -19,7 +19,7 @@ import { useProfitability } from "../context/ProfitabilityContext";
 interface CachedFarmStateResponse {
   asicMiners: MinerInfo[];
   mobileMiners: MobileMiner[];
-  popminerDevices: PopMinerDevice[];
+  popminerDevices: OverMinerDevice[];
   nerdminers: NerdMinerInfo[];
   farmSnapshot: FarmSnapshot | null;
   lastAsicPollMs: number;
@@ -64,7 +64,7 @@ export function useFarmData() {
   const { poolFeePercent, electricityCostPerKwh, minerWattage, poolProfiles, currency } = useProfitability();
   const [minerData, setMinerData] = useState<MinerWithSaved[]>([]);
   const [mobileMiners, setMobileMiners] = useState<MobileMiner[]>([]);
-  const [popMinerDevices, setPopMinerDevices] = useState<PopMinerDevice[]>([]);
+  const [overMinerDevices, setOverMinerDevices] = useState<OverMinerDevice[]>([]);
   const [nerdMiners, setNerdMiners] = useState<NerdMinerInfo[]>([]);
   const [savedMiners, setSavedMiners] = useState<SavedMiner[]>([]);
   const [coins, setCoins] = useState<CoinConfig[]>([]);
@@ -129,7 +129,7 @@ export function useFarmData() {
 
         setMinerData(data);
         setMobileMiners(cached.mobileMiners);
-        setPopMinerDevices(cached.popminerDevices);
+        setOverMinerDevices(cached.popminerDevices);
         setNerdMiners(cached.nerdminers ?? []);
         setLastPollMs(cached.lastAsicPollMs);
       } catch (err) {
@@ -229,12 +229,12 @@ export function useFarmData() {
 
   const asicCount = miners.length;
   const mobileCount = mobileMiners.length;
-  const popMinerCount = popMinerDevices.length;
-  const totalCount = asicCount + mobileCount + popMinerCount;
+  const overMinerCount = overMinerDevices.length;
+  const totalCount = asicCount + mobileCount + overMinerCount;
   const onlineAsicCount = onlineCount;
   const onlineMobileCount = mobileMiners.filter((m) => m.isOnline).length;
-  const onlinePopMinerCount = popMinerDevices.filter((d) => d.online).length;
-  const totalOnline = onlineAsicCount + onlineMobileCount + onlinePopMinerCount;
+  const onlineOverMinerCount = overMinerDevices.filter((d) => d.online).length;
+  const totalOnline = onlineAsicCount + onlineMobileCount + onlineOverMinerCount;
 
   const asicHashrateGhs = totalRtHashrate;
   // Normalize each ASIC by its own reported unit (most report "G", but
@@ -248,12 +248,12 @@ export function useFarmData() {
     .filter((m) => m.isOnline)
     .reduce((s, m) => s + m.hashrateHs, 0);
   const mobileHashrateGhs = mobileHashrateHs / 1e9;
-  const popMinerHashrateHs = popMinerDevices
+  const overMinerHashrateHs = overMinerDevices
     .filter((d) => d.online)
     .reduce((s, d) => s + d.hashrate, 0);
-  const popMinerHashrateGhs = popMinerHashrateHs / 1e9;
-  const totalHashrateGhs = asicHashrateGhs + mobileHashrateGhs + popMinerHashrateGhs;
-  const totalHashrateHs = asicHashrateHs + mobileHashrateHs + popMinerHashrateHs;
+  const overMinerHashrateGhs = overMinerHashrateHs / 1e9;
+  const totalHashrateGhs = asicHashrateGhs + mobileHashrateGhs + overMinerHashrateGhs;
+  const totalHashrateHs = asicHashrateHs + mobileHashrateHs + overMinerHashrateHs;
   const totalFarmWattage = useMemo(() => {
     return onlineMiners.reduce((sum, { saved }) => sum + (saved?.wattage ?? minerWattage), 0);
   }, [onlineMiners, minerWattage]);
@@ -372,7 +372,7 @@ export function useFarmData() {
   return {
     minerData,
     mobileMiners,
-    popMinerDevices,
+    overMinerDevices,
     nerdMiners,
     savedMiners,
     coins,
@@ -391,18 +391,18 @@ export function useFarmData() {
     unit,
     asicCount,
     mobileCount,
-    popMinerCount,
+    overMinerCount,
     totalCount,
     onlineAsicCount,
     onlineMobileCount,
-    onlinePopMinerCount,
+    onlineOverMinerCount,
     totalOnline,
     asicHashrateGhs,
     asicHashrateHs,
     mobileHashrateHs,
     mobileHashrateGhs,
-    popMinerHashrateHs,
-    popMinerHashrateGhs,
+    overMinerHashrateHs,
+    overMinerHashrateGhs,
     totalHashrateGhs,
     totalHashrateHs,
     handleManualRefresh,

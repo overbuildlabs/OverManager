@@ -8,7 +8,7 @@ use crate::commands::history::FarmSnapshot;
 use crate::commands::miner::MinerInfo;
 use crate::commands::mobile_miner::{MobileMiner, MobileMinersState};
 use crate::commands::nerdminer::NerdMinerInfo;
-use crate::popminer_device::{PopMinerDevice, PopMinerDevicesState};
+use crate::popminer_device::{OverMinerDevice, OverMinerDevicesState};
 
 /// Always-on cache populated by the background poller. The frontend reads
 /// from here on mount and listens for `farm-state-updated` events to stay
@@ -44,7 +44,7 @@ pub struct CachedFarmStateResponse {
     pub asic_miners: Vec<MinerInfo>,
     pub nerdminers: Vec<NerdMinerInfo>,
     pub mobile_miners: Vec<MobileMiner>,
-    pub popminer_devices: Vec<PopMinerDevice>,
+    pub popminer_devices: Vec<OverMinerDevice>,
     pub farm_snapshot: Option<FarmSnapshot>,
     pub last_asic_poll_ms: i64,
     pub last_snapshot_ms: i64,
@@ -68,7 +68,7 @@ pub fn get_cached_nerdminers(
 pub fn get_cached_farm_state(
     cache: tauri::State<Arc<CachedFarmState>>,
     mobile: tauri::State<Arc<MobileMinersState>>,
-    popminer: tauri::State<Arc<PopMinerDevicesState>>,
+    overminer: tauri::State<Arc<OverMinerDevicesState>>,
 ) -> CachedFarmStateResponse {
     let asic_miners = cache.asic_miners.lock().unwrap().clone();
     let nerdminers = cache.nerdminers.lock().unwrap().clone();
@@ -83,9 +83,9 @@ pub fn get_cached_farm_state(
         v
     };
 
-    let popminer_devices: Vec<PopMinerDevice> = {
-        let saved = popminer.saved.lock().unwrap();
-        let mut v: Vec<PopMinerDevice> = saved.values().cloned().collect();
+    let overminer_devices: Vec<OverMinerDevice> = {
+        let saved = overminer.saved.lock().unwrap();
+        let mut v: Vec<OverMinerDevice> = saved.values().cloned().collect();
         v.sort_by(|a, b| a.name.cmp(&b.name));
         v
     };
@@ -94,7 +94,7 @@ pub fn get_cached_farm_state(
         asic_miners,
         nerdminers,
         mobile_miners,
-        popminer_devices,
+        popminer_devices: overminer_devices,
         farm_snapshot,
         last_asic_poll_ms,
         last_snapshot_ms,

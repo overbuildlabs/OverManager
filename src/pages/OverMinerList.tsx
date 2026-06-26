@@ -10,7 +10,7 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
-import type { PopMinerDevice } from "../types/miner";
+import type { OverMinerDevice } from "../types/miner";
 
 const MAX_HISTORY_POINTS = 30;
 
@@ -42,7 +42,7 @@ interface HistoryPoint {
   hs: number;
 }
 
-function PopMinerHashrateChart({ history }: { history: HistoryPoint[] }) {
+function OverMinerHashrateChart({ history }: { history: HistoryPoint[] }) {
   if (history.length < 2) return null;
   const chartData = history.map((p) => ({
     label: new Date(p.ts).toLocaleTimeString(),
@@ -139,13 +139,13 @@ function MicrochipIcon({ className }: { className?: string }) {
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
-function PopMinerCard({
+function OverMinerCard({
   device,
   onClick,
   onRemove,
   history,
 }: {
-  device: PopMinerDevice;
+  device: OverMinerDevice;
   onClick: () => void;
   onRemove: () => void;
   history: HistoryPoint[];
@@ -266,7 +266,7 @@ function PopMinerCard({
             <HealthDot ok={device.authorized} label="Auth" />
             <HealthDot ok={device.mining} label={device.mining ? "Mining" : "Idle"} />
           </div>
-          <PopMinerHashrateChart history={history} />
+          <OverMinerHashrateChart history={history} />
         </>
       ) : (
         <div className="text-center py-4 text-slate-500 text-sm">
@@ -281,7 +281,7 @@ function PopMinerCard({
 
 type SortDir = "asc" | "desc";
 
-function PopMinerTable({
+function OverMinerTable({
   data,
   sortCol,
   sortDir,
@@ -289,14 +289,14 @@ function PopMinerTable({
   onRowClick,
   onRemove,
 }: {
-  data: PopMinerDevice[];
+  data: OverMinerDevice[];
   sortCol: string | null;
   sortDir: SortDir;
   onSort: (col: string) => void;
-  onRowClick: (device: PopMinerDevice) => void;
-  onRemove: (device: PopMinerDevice) => void;
+  onRowClick: (device: OverMinerDevice) => void;
+  onRemove: (device: OverMinerDevice) => void;
 }) {
-  const statusBg = (device: PopMinerDevice) => {
+  const statusBg = (device: OverMinerDevice) => {
     if (!device.online) return "bg-slate-500";
     if (device.mining) return "bg-emerald-500";
     return "bg-amber-500";
@@ -500,12 +500,12 @@ function AddDevicePanel({
   onClose: () => void;
   onDeviceAdded: () => void;
 }) {
-  const [discovered, setDiscovered] = useState<PopMinerDevice[]>([]);
+  const [discovered, setDiscovered] = useState<OverMinerDevice[]>([]);
   const [adding, setAdding] = useState<string | null>(null);
 
   const fetchDiscovered = useCallback(async () => {
     try {
-      const list = await invoke<PopMinerDevice[]>(
+      const list = await invoke<OverMinerDevice[]>(
         "get_discovered_popminer_devices"
       );
       setDiscovered(list);
@@ -649,15 +649,15 @@ type ViewMode = "card" | "grid";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function PopMinerList() {
-  const [devices, setDevices] = useState<Map<string, PopMinerDevice>>(
+export default function OverMinerList() {
+  const [devices, setDevices] = useState<Map<string, OverMinerDevice>>(
     new Map()
   );
   const [loading, setLoading] = useState(true);
   const [showAddPanel, setShowAddPanel] = useState(false);
 
   // Removal modal
-  const [removeTarget, setRemoveTarget] = useState<PopMinerDevice | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<OverMinerDevice | null>(null);
   const [removing, setRemoving] = useState(false);
   const [removeError, setRemoveError] = useState<string | null>(null);
 
@@ -675,8 +675,8 @@ export default function PopMinerList() {
 
   const refresh = useCallback(async () => {
     try {
-      const list = await invoke<PopMinerDevice[]>("get_popminer_devices");
-      const map = new Map<string, PopMinerDevice>();
+      const list = await invoke<OverMinerDevice[]>("get_popminer_devices");
+      const map = new Map<string, OverMinerDevice>();
       for (const d of list) map.set(d.mac, d);
       setDevices(map);
     } catch (err) {
@@ -691,7 +691,7 @@ export default function PopMinerList() {
 
     const unlisteners: (() => void)[] = [];
 
-    listen<PopMinerDevice>("popminer-device-stats", (event) => {
+    listen<OverMinerDevice>("popminer-device-stats", (event) => {
       const d = event.payload;
       setDevices((prev) => {
         const next = new Map(prev);
@@ -1037,7 +1037,7 @@ export default function PopMinerList() {
           </button>
         </div>
       ) : viewMode === "grid" ? (
-        <PopMinerTable
+        <OverMinerTable
           data={sorted}
           sortCol={sortCol}
           sortDir={sortDir}
@@ -1051,7 +1051,7 @@ export default function PopMinerList() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {sorted.map((d) => (
-            <PopMinerCard
+            <OverMinerCard
               key={d.mac}
               device={d}
               onClick={() => openUrl(`http://${d.ip}/`)}

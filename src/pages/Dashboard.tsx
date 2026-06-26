@@ -66,15 +66,15 @@ export default function Dashboard() {
     totalRtHashrate,
     asicCount,
     mobileCount,
-    popMinerCount,
+    overMinerCount,
     totalCount,
     onlineAsicCount,
     onlineMobileCount,
-    onlinePopMinerCount,
+    onlineOverMinerCount,
     totalOnline,
     asicHashrateHs,
     mobileHashrateHs,
-    popMinerHashrateHs,
+    overMinerHashrateHs,
     totalHashrateHs,
     handleManualRefresh,
     electricityCostPerKwh,
@@ -261,8 +261,8 @@ export default function Dashboard() {
         />
         <StatCard
           label="OverMiner Devices"
-          value={popMinerCount}
-          subline={`${onlinePopMinerCount} online`}
+          value={overMinerCount}
+          subline={`${onlineOverMinerCount} online`}
         />
       </div>
 
@@ -284,7 +284,7 @@ export default function Dashboard() {
         />
         <StatCard
           label="OverMiner Hashrate"
-          value={formatMobileHashrate(popMinerHashrateHs)}
+          value={formatMobileHashrate(overMinerHashrateHs)}
         />
         <StatCard
           label="Fleet Uptime (24h)"

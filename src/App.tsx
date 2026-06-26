@@ -10,7 +10,7 @@ import Alerts from "./pages/Alerts";
 import Pools from "./pages/Pools";
 import MobileMinerList from "./pages/MobileMinerList";
 import MobileMinerDetail from "./pages/MobileMinerDetail";
-import PopMinerList from "./pages/PopMinerList";
+import OverMinerList from "./pages/OverMinerList";
 import NerdMinerList from "./pages/NerdMinerList";
 import CoinDashboard from "./pages/CoinDashboard";
 import Licenses from "./pages/Licenses";
@@ -60,7 +60,7 @@ function App() {
                   <Route path="/miners" element={<MinerList />} />
                   <Route path="/mobile-miners" element={<MobileMinerList />} />
                   <Route path="/mobile-miners/:deviceId" element={<MobileMinerDetail />} />
-                  <Route path="/popminer-devices" element={<PopMinerList />} />
+                  <Route path="/popminer-devices" element={<OverMinerList />} />
                   <Route path="/nerdminers" element={<NerdMinerList />} />
                   <Route path="/pools" element={<Pools />} />
                   <Route path="/settings" element={<Settings />} />

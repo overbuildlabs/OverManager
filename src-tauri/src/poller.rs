@@ -12,7 +12,7 @@ use crate::commands::miner::{self, MinerInfo};
 use crate::commands::mobile_miner::MobileMinersState;
 use crate::commands::pool_profiles::PoolProfile;
 use crate::commands::storage::SavedMiner;
-use crate::popminer_device::PopMinerDevicesState;
+use crate::popminer_device::OverMinerDevicesState;
 
 const ASIC_POLL_INTERVAL_SECS: u64 = 45;
 const MOBILE_ALERT_INTERVAL_SECS: u64 = 10;
@@ -31,7 +31,7 @@ pub fn spawn_all(
     app: AppHandle,
     cache: Arc<CachedFarmState>,
     mobile_state: Arc<MobileMinersState>,
-    popminer_state: Arc<PopMinerDevicesState>,
+    overminer_state: Arc<OverMinerDevicesState>,
 ) {
     // Task 1: ASIC poller (45s + force-poll Notify)
     {
@@ -56,9 +56,9 @@ pub fn spawn_all(
         let app = app.clone();
         let cache = Arc::clone(&cache);
         let mobile_state = Arc::clone(&mobile_state);
-        let popminer_state = Arc::clone(&popminer_state);
+        let overminer_state = Arc::clone(&overminer_state);
         tauri::async_runtime::spawn(async move {
-            snapshot_loop(app, cache, mobile_state, popminer_state).await;
+            snapshot_loop(app, cache, mobile_state, overminer_state).await;
         });
     }
 
@@ -377,7 +377,7 @@ async fn snapshot_loop(
     app: AppHandle,
     cache: Arc<CachedFarmState>,
     mobile_state: Arc<MobileMinersState>,
-    popminer_state: Arc<PopMinerDevicesState>,
+    overminer_state: Arc<OverMinerDevicesState>,
 ) {
     log::info!(
         "Background poller: snapshot task starting (initial delay {}s)",
@@ -389,7 +389,7 @@ async fn snapshot_loop(
     // tick resolves immediately, which would cause two snapshots in rapid
     // succession on startup before settling into the 60s cadence.
     loop {
-        build_and_persist_snapshot(&app, &cache, &mobile_state, &popminer_state).await;
+        build_and_persist_snapshot(&app, &cache, &mobile_state, &overminer_state).await;
         tokio::time::sleep(Duration::from_secs(SNAPSHOT_INTERVAL_SECS)).await;
     }
 }
@@ -398,7 +398,7 @@ async fn build_and_persist_snapshot(
     app: &AppHandle,
     cache: &Arc<CachedFarmState>,
     mobile_state: &Arc<MobileMinersState>,
-    popminer_state: &Arc<PopMinerDevicesState>,
+    overminer_state: &Arc<OverMinerDevicesState>,
 ) {
     let asic = cache.asic_miners.lock().unwrap().clone();
     let saved_miners = crate::commands::storage::get_saved_miners().unwrap_or_default();
@@ -410,8 +410,8 @@ async fn build_and_persist_snapshot(
         map.values().cloned().collect()
     };
 
-    let popminer_devices: Vec<_> = {
-        let map = popminer_state.saved.lock().unwrap();
+    let overminer_devices: Vec<_> = {
+        let map = overminer_state.saved.lock().unwrap();
         map.values().cloned().collect()
     };
 
@@ -507,7 +507,7 @@ async fn build_and_persist_snapshot(
     // staging in history::add_farm_snapshot, but for the /ingest/miners
     // endpoint which populates the cloud `miner_states` table (drives the web
     // Dashboard's "Total Miners" tile).
-    stage_miners_for_cloud(app, &asic, &saved_miners, &mobile_miners, &popminer_devices, &nerdminers);
+    stage_miners_for_cloud(app, &asic, &saved_miners, &mobile_miners, &overminer_devices, &nerdminers);
 
     {
         let mut slot = cache.farm_snapshot.lock().unwrap();
@@ -518,7 +518,7 @@ async fn build_and_persist_snapshot(
     let _ = app.emit("farm-state-updated", ());
 }
 
-/// Convert local ASIC / mobile / PoPMiner / NerdMiner records into the shape
+/// Convert local ASIC / mobile / OverMiner / NerdMiner records into the shape
 /// the `/api/v1/ingest/miners` endpoint expects, stage it on `CloudState`, and
 /// enqueue a fallback copy so the next sync cycle picks it up. Mirrors the
 /// snapshot wiring in `commands::history::add_farm_snapshot`.
@@ -527,7 +527,7 @@ fn stage_miners_for_cloud(
     asic: &[MinerInfo],
     saved_miners: &[SavedMiner],
     mobile_miners: &[crate::commands::mobile_miner::MobileMiner],
-    popminer_devices: &[crate::popminer_device::PopMinerDevice],
+    overminer_devices: &[crate::popminer_device::OverMinerDevice],
     nerdminers: &[crate::commands::nerdminer::NerdMinerInfo],
 ) {
     use tauri::Manager;
@@ -623,9 +623,9 @@ fn stage_miners_for_cloud(
         }));
     }
 
-    // PoPMiner ESP32 devices — minerId keyed on MAC (stable, what discovery
+    // OverMiner ESP32 devices — minerId keyed on MAC (stable, what discovery
     // already uses as the map key).
-    for d in popminer_devices {
+    for d in overminer_devices {
         miners_json.push(serde_json::json!({
             "minerType": "popminer",
             "minerId": d.mac,

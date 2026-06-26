@@ -13,7 +13,7 @@ const POPMINER_SERVICE: &str = "_popminer._tcp.local.";
 /// Identity from GET /api/info (fetched once on discovery)
 /// Note: ESP32 API sends snake_case JSON, so NO rename_all here.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct PopMinerInfo {
+pub struct OverMinerInfo {
     #[serde(default)]
     pub fw: String,
     #[serde(default)]
@@ -37,7 +37,7 @@ pub struct PopMinerInfo {
 /// Live stats from GET /api/stats (polled every 5s)
 /// Note: ESP32 API sends snake_case JSON, so NO rename_all here.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct PopMinerStats {
+pub struct OverMinerStats {
     #[serde(default)]
     pub fw: String,
     #[serde(default)]
@@ -73,7 +73,7 @@ pub struct PopMinerStats {
 /// Combined device state (sent to frontend)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct PopMinerDevice {
+pub struct OverMinerDevice {
     pub mac: String,
     pub name: String,
     pub model: String,
@@ -99,11 +99,11 @@ pub struct PopMinerDevice {
     pub consecutive_failures: u32,
 }
 
-pub struct PopMinerDevicesState {
+pub struct OverMinerDevicesState {
     /// Devices the user has explicitly added (persisted to disk)
-    pub saved: Mutex<HashMap<String, PopMinerDevice>>,
+    pub saved: Mutex<HashMap<String, OverMinerDevice>>,
     /// Devices discovered via mDNS but not yet added (ephemeral)
-    pub discovered: Mutex<HashMap<String, PopMinerDevice>>,
+    pub discovered: Mutex<HashMap<String, OverMinerDevice>>,
 }
 
 // ─── Persistence ─────────────────────────────────────────────────────────────
@@ -124,7 +124,7 @@ struct SavedDeviceEntry {
     pub fw: String,
 }
 
-pub fn load_saved_devices() -> HashMap<String, PopMinerDevice> {
+pub fn load_saved_devices() -> HashMap<String, OverMinerDevice> {
     let path = popminer_devices_path();
     if !path.exists() {
         return HashMap::new();
@@ -134,7 +134,7 @@ pub fn load_saved_devices() -> HashMap<String, PopMinerDevice> {
         serde_json::from_str(&content).unwrap_or_default();
     let mut map = HashMap::new();
     for e in entries {
-        let device = PopMinerDevice {
+        let device = OverMinerDevice {
             mac: e.mac.clone(),
             name: e.name,
             model: e.model,
@@ -164,7 +164,7 @@ pub fn load_saved_devices() -> HashMap<String, PopMinerDevice> {
     map
 }
 
-fn save_devices_to_disk(devices: &HashMap<String, PopMinerDevice>) {
+fn save_devices_to_disk(devices: &HashMap<String, OverMinerDevice>) {
     let path = popminer_devices_path();
     if let Some(parent) = path.parent() {
         let _ = fs::create_dir_all(parent);
@@ -194,18 +194,18 @@ fn save_devices_to_disk(devices: &HashMap<String, PopMinerDevice>) {
 
 #[tauri::command]
 pub fn get_popminer_devices(
-    state: tauri::State<Arc<PopMinerDevicesState>>,
-) -> Vec<PopMinerDevice> {
+    state: tauri::State<Arc<OverMinerDevicesState>>,
+) -> Vec<OverMinerDevice> {
     let saved = state.saved.lock().unwrap();
-    let mut result: Vec<PopMinerDevice> = saved.values().cloned().collect();
+    let mut result: Vec<OverMinerDevice> = saved.values().cloned().collect();
     result.sort_by(|a, b| a.name.cmp(&b.name));
     result
 }
 
 #[tauri::command]
 pub fn get_discovered_popminer_devices(
-    state: tauri::State<Arc<PopMinerDevicesState>>,
-) -> Vec<PopMinerDevice> {
+    state: tauri::State<Arc<OverMinerDevicesState>>,
+) -> Vec<OverMinerDevice> {
     let saved = state.saved.lock().unwrap();
     let discovered = state.discovered.lock().unwrap();
     discovered
@@ -218,8 +218,8 @@ pub fn get_discovered_popminer_devices(
 #[tauri::command]
 pub fn add_popminer_device(
     mac: String,
-    state: tauri::State<Arc<PopMinerDevicesState>>,
-) -> Result<Vec<PopMinerDevice>, String> {
+    state: tauri::State<Arc<OverMinerDevicesState>>,
+) -> Result<Vec<OverMinerDevice>, String> {
     let discovered = state.discovered.lock().unwrap();
     let device = discovered
         .get(&mac)
@@ -230,9 +230,9 @@ pub fn add_popminer_device(
     let mut saved = state.saved.lock().unwrap();
     saved.insert(mac.clone(), device);
     save_devices_to_disk(&saved);
-    log::info!("PoPMiner: added device {} to saved list", mac);
+    log::info!("OverMiner: added device {} to saved list", mac);
 
-    let mut result: Vec<PopMinerDevice> = saved.values().cloned().collect();
+    let mut result: Vec<OverMinerDevice> = saved.values().cloned().collect();
     result.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(result)
 }
@@ -240,29 +240,29 @@ pub fn add_popminer_device(
 #[tauri::command]
 pub fn remove_popminer_device(
     mac: String,
-    state: tauri::State<Arc<PopMinerDevicesState>>,
-) -> Result<Vec<PopMinerDevice>, String> {
+    state: tauri::State<Arc<OverMinerDevicesState>>,
+) -> Result<Vec<OverMinerDevice>, String> {
     let mut saved = state.saved.lock().unwrap();
     saved.remove(&mac);
     save_devices_to_disk(&saved);
-    log::info!("PoPMiner: removed device {} from saved list", mac);
+    log::info!("OverMiner: removed device {} from saved list", mac);
 
-    let mut result: Vec<PopMinerDevice> = saved.values().cloned().collect();
+    let mut result: Vec<OverMinerDevice> = saved.values().cloned().collect();
     result.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(result)
 }
 
 // ─── Discovery ───────────────────────────────────────────────────────────────
 
-pub async fn start_popminer_discovery(
+pub async fn start_overminer_discovery(
     app_handle: tauri::AppHandle,
-    devices_state: Arc<PopMinerDevicesState>,
+    devices_state: Arc<OverMinerDevicesState>,
 ) {
     let daemon = match ServiceDaemon::new() {
         Ok(d) => d,
         Err(e) => {
             log::error!(
-                "PoPMiner discovery: failed to create mDNS daemon: {}",
+                "OverMiner discovery: failed to create mDNS daemon: {}",
                 e
             );
             return;
@@ -273,7 +273,7 @@ pub async fn start_popminer_discovery(
         Ok(r) => r,
         Err(e) => {
             log::error!(
-                "PoPMiner discovery: failed to browse {}: {}",
+                "OverMiner discovery: failed to browse {}: {}",
                 POPMINER_SERVICE,
                 e
             );
@@ -287,7 +287,7 @@ pub async fn start_popminer_discovery(
         .expect("failed to build HTTP client");
 
     log::info!(
-        "PoPMiner discovery: browsing for {} devices",
+        "OverMiner discovery: browsing for {} devices",
         POPMINER_SERVICE
     );
 
@@ -309,7 +309,7 @@ pub async fn start_popminer_discovery(
 
                 if ip.is_empty() {
                     log::warn!(
-                        "PoPMiner discovery: resolved service with no IPv4 address"
+                        "OverMiner discovery: resolved service with no IPv4 address"
                     );
                     continue;
                 }
@@ -318,7 +318,7 @@ pub async fn start_popminer_discovery(
                 let hostname = info.get_hostname().trim_end_matches('.').to_string();
                 let txt_name = info
                     .get_property_val_str("name")
-                    .unwrap_or("PoPMiner")
+                    .unwrap_or("OverMiner")
                     .to_string();
                 let txt_model = info
                     .get_property_val_str("model")
@@ -330,7 +330,7 @@ pub async fn start_popminer_discovery(
                     .to_string();
 
                 log::info!(
-                    "PoPMiner discovery: found {} ({}) at {}:{}",
+                    "OverMiner discovery: found {} ({}) at {}:{}",
                     txt_name,
                     hostname,
                     ip,
@@ -340,14 +340,14 @@ pub async fn start_popminer_discovery(
                 // Fetch /api/info once
                 let info_url = format!("http://{}:{}/api/info", ip, port);
                 let device_info = match client.get(&info_url).send().await {
-                    Ok(resp) => resp.json::<PopMinerInfo>().await.unwrap_or_default(),
+                    Ok(resp) => resp.json::<OverMinerInfo>().await.unwrap_or_default(),
                     Err(e) => {
                         log::warn!(
-                            "PoPMiner discovery: failed to fetch info from {}: {}",
+                            "OverMiner discovery: failed to fetch info from {}: {}",
                             ip,
                             e
                         );
-                        PopMinerInfo {
+                        OverMinerInfo {
                             name: txt_name.clone(),
                             model: txt_model.clone(),
                             fw: txt_fw.clone(),
@@ -365,7 +365,7 @@ pub async fn start_popminer_discovery(
                     device_info.mac.clone()
                 };
 
-                let device = PopMinerDevice {
+                let device = OverMinerDevice {
                     mac: mac.clone(),
                     name: if device_info.name.is_empty() {
                         txt_name
@@ -456,7 +456,7 @@ pub async fn start_popminer_discovery(
                             match poll_client.get(&stats_url).send().await {
                                 Ok(resp) => {
                                     if let Ok(stats) =
-                                        resp.json::<PopMinerStats>().await
+                                        resp.json::<OverMinerStats>().await
                                     {
                                         // Update discovered map
                                         {
@@ -517,7 +517,7 @@ pub async fn start_popminer_discovery(
                                             let updated = device.clone();
                                             drop(saved);
                                             log::info!(
-                                                "PoPMiner: {} marked offline after 3 failures",
+                                                "OverMiner: {} marked offline after 3 failures",
                                                 poll_mac
                                             );
                                             let _ = poll_app.emit(
@@ -529,7 +529,7 @@ pub async fn start_popminer_discovery(
                                             // Only remove the polling task.
                                             drop(saved);
                                             log::info!(
-                                                "PoPMiner: {} stopping poll after {} consecutive failures (device stays saved)",
+                                                "OverMiner: {} stopping poll after {} consecutive failures (device stays saved)",
                                                 poll_mac,
                                                 failures
                                             );
@@ -561,7 +561,7 @@ pub async fn start_popminer_discovery(
             }
             Ok(ServiceEvent::ServiceRemoved(_, fullname)) => {
                 log::info!(
-                    "PoPMiner discovery: service removed: {}",
+                    "OverMiner discovery: service removed: {}",
                     fullname
                 );
                 // Don't immediately remove — let the polling failure counter handle it
@@ -570,7 +570,7 @@ pub async fn start_popminer_discovery(
                 // SearchStarted, ServiceFound, SearchStopped — ignore
             }
             Err(e) => {
-                log::warn!("PoPMiner discovery: recv error: {}", e);
+                log::warn!("OverMiner discovery: recv error: {}", e);
                 break;
             }
         }
@@ -578,7 +578,7 @@ pub async fn start_popminer_discovery(
 }
 
 /// Apply stats from a poll response to a device.
-fn apply_stats(device: &mut PopMinerDevice, stats: &PopMinerStats) {
+fn apply_stats(device: &mut OverMinerDevice, stats: &OverMinerStats) {
     device.mining = stats.mining;
     device.pool_connected = stats.pool_connected;
     device.authorized = stats.authorized;
