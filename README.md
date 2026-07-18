@@ -2,7 +2,7 @@
 
 **Cross-platform miner management software for ASIC and mobile miners**
 
-Built by [OverBuild Labs](https://overbuildlabs.com) | [Support: support@overbuildlabs.com](mailto:support@overbuildlabs.com)
+Built by [OverBuild Labs](https://overbuildlabs.com) | [Roadmap](ROADMAP.md) | [Request a feature](https://github.com/overbuildlabs/OverManager/discussions/categories/ideas) | [Support: support@overbuildlabs.com](mailto:support@overbuildlabs.com)
 
 ## Overview
 
