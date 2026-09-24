@@ -6,7 +6,7 @@ What we're building, what's next, and how to tell us what you want.
 > Items here are intentions, not commitments, and dates are deliberately
 > absent. Last updated: **July 2026**.
 
-## 💡 Request a feature / vote
+## Request a feature / vote
 
 The roadmap is driven by miners, not by us guessing:
 
@@ -19,7 +19,7 @@ The roadmap is driven by miners, not by us guessing:
   [support@overbuildlabs.com](mailto:support@overbuildlabs.com) and we'll file
   it for you.
 
-## 🚀 Now — actively in progress
+## Now — actively in progress
 
 - **OverManager Cloud launch** — the web portal at
   [cloud.overbuildlabs.com](https://cloud.overbuildlabs.com): live farm
@@ -29,7 +29,7 @@ The roadmap is driven by miners, not by us guessing:
 - **OverManager Mobile** — the companion app (alerts on your phone, farm
   monitoring on the go), heading toward public app-store release.
 
-## 🔜 Next
+## Next
 
 - **Code-signed Windows installers** — remove the SmartScreen "unknown
   publisher" warning.
@@ -40,7 +40,7 @@ The roadmap is driven by miners, not by us guessing:
   ship for IceRiver; extending control support to more manufacturers.
 - **Promo & referral codes** for Cloud plans.
 
-## 🔭 Later / exploring
+## Later / exploring
 
 - **Sign in with Google on the desktop app** (already available on the web
   portal).
@@ -50,7 +50,7 @@ The roadmap is driven by miners, not by us guessing:
   your farm's data.
 - **Team access** — multiple logins per Cloud account with roles.
 
-## ✅ Recently shipped
+## Recently shipped
 
 - **v1.8.4** — OverManager Cloud integration, per-coin dashboards,
   auto-scaling hashrate units, Bitaxe/NerdQaxe++ + NerdMiner_v2 + Antminer
