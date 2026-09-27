@@ -101,7 +101,7 @@ OverManager includes an embedded HTTP server that receives push-based telemetry 
 - **Push to OverMobile** — select mobile devices and queue a pool configuration change directly from the pool detail page
 - Bulk apply pool configurations to ASIC miners
 
-![Pool Detail View](docs/screenshots/Pool%20View.png)
+![New Pool Profile](docs/screenshots/Pool%20View.png)
 
 ### Data & Export
 - CSV export: miner list, alert history, profitability reports, farm history
