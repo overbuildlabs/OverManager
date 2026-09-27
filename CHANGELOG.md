@@ -1,5 +1,28 @@
 # Changelog
 
+## v1.9.1
+
+### Fixed
+
+- **The 7d and 30d charts show the whole window.** The time axis used to
+  stretch whatever history existed across the chart, so with less than a
+  week of data 7d looked the same as 24h and every label read today's date.
+  The axis now always spans the window you picked, ending now, and the line
+  breaks wherever OverManager wasn't running instead of drawing a straight
+  line across days with no readings. Hovering shows the date and time. Both
+  the Dashboard and the per-coin dashboard are fixed.
+- **Charts no longer replay a 1.5-second draw-in** every time you switch
+  range or a new reading arrives.
+- **NerdMiners are always Bitcoin.** The coin dropdown on NerdMiner cards
+  and in Add NerdMiner is gone (NerdMiner_v2 is a SHA-256 Bitcoin miner), and
+  any NerdMiner previously set to another coin is read back as BTC.
+- **Acknowledge all and Clear history are fast and show progress.** They
+  used to acknowledge alerts one at a time, rewriting the history file and
+  waiting on a Cloud request for each, with no feedback until the end. Now
+  it's one save and one Cloud request, and the button shows a spinner and
+  "Acknowledging N…" or "Clearing…" while it works. If Cloud can't be
+  reached, each alert is queued to sync later as before.
+
 ## v1.9.0
 
 ### Changed
