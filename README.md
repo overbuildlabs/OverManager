@@ -90,7 +90,7 @@ OverManager includes an embedded HTTP server that receives push-based telemetry 
 - Desktop notifications (branded OverManager alerts on Windows)
 - Email alerts via SMTP (SendGrid, Gmail, or any SMTP provider)
 - Alert history with acknowledge/dismiss workflow
-- 5-minute startup grace period prevents false alerts after OverManager restarts
+- 30-second startup grace period prevents false alerts after OverManager restarts
 
 ![Alert Desktop Notification](docs/screenshots/Alert%20Desktop%20Notification.png)
 ![Alert Page](docs/screenshots/Alert%20Screen.png)

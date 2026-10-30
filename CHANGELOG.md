@@ -1,5 +1,52 @@
 # Changelog
 
+## v1.9.2
+
+### Security
+
+- **Another device on your network can no longer change an OverMobile
+  phone's payout wallet.** The OverMobile server listed every paired phone,
+  including its secret key, to anyone who asked, and accepted commands
+  (such as a new wallet address) from anyone holding that key. It also let
+  any web page open in a browser on your network make those requests. Both
+  endpoints are gone and the server no longer allows browser pages to call
+  it. OverManager still sends commands to phones from its own OverMobile
+  screen and from OverManager Cloud, and phones pair, report and pick up
+  commands exactly as before, so existing OverMobile versions keep working.
+- **Phone keys stay in the backend.** The OverMobile screens never showed a
+  phone's key, but the app passed it to its own interface anyway. It no
+  longer does.
+- **Pairing codes can't be guessed quickly.** A device that enters 5 wrong
+  pairing codes in a minute is refused until the minute is up, and after 50
+  wrong codes in a minute from all devices together, pairing pauses for
+  everyone until the minute is up. Before, all million codes could be tried
+  in a few minutes. Because the limit is per device, one device sending bad
+  codes no longer stops other phones from pairing. The refusal tells the
+  phone how many seconds are left, so it can count down before letting you
+  try again.
+- **Phones must always use their key.** The "Require API key" setting is
+  gone: OverMobile reports are always checked against the phone's key, so
+  nothing else on your network can send fake stats for a phone or see and
+  confirm its pending commands. Paired OverMobile phones already send their
+  key and keep working. OverMiner devices don't use this server (OverManager
+  reads them directly) and are unaffected.
+- **OverManager Cloud commands only reach your own miners.** A command from
+  Cloud now runs only if its target is a phone paired with this OverManager
+  or a miner in your miner list. Anything else is refused with an error and
+  logged, so OverManager can't be made to send pool settings to some other
+  address on your network.
+- **The Cloud key stays out of URLs.** OverManager now sends its Cloud key
+  in a header when it connects for remote commands, instead of in the
+  connection address, where proxies and server logs could record it.
+
+### Fixed
+
+- **OverManager Cloud shows what happened to a command.** Cloud never
+  recorded OverManager's replies, so every command stayed "pending" in the
+  portal. Replies now use the format Cloud expects. Commands for OverMobile
+  phones show "delivered" once OverManager has queued them, then "applied"
+  or "failed" when the phone reports back.
+
 ## v1.9.1
 
 ### Fixed
